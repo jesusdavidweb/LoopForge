@@ -416,7 +416,7 @@ async function refreshObsCrossProject(){
 async function applyObsFilter(){return obsLoadAnalytics()}
 
 function obsUserName(id){
-  if(!id||id==='unassigned')return '未分配';
+  if(!id||id==='unassigned')return obsExportText('未分配','Unassigned');
   const user=userById(id);
   return user?userDisplay(user):String(id);
 }
@@ -516,8 +516,8 @@ function obsTableCard(title,sub,headers,rows,colspan,pageKey){
 // costLabel 区分"成本为 0"与"成本未识别"，未识别时展示占位而不是 ¥0。
 function costLabel(value,known){
   const amount=Number(value||0);
-  if(known===false&&amount<=0)return '<span class="muted">未识别</span>';
-  return '¥'+(amount>0&&amount<.01?amount.toPrecision(3):amount.toFixed(2))+(known===false?'（部分未识别）':'');
+  if(known===false&&amount<=0)return `<span class="muted">${obsExportText('未识别','Unknown')}</span>`;
+  return '¥'+(amount>0&&amount<.01?amount.toPrecision(3):amount.toFixed(2))+(known===false?obsExportText('（部分未识别）',' (partly unknown)'):'');
 }
 function obsIcon(name,size){
   size=size||14;
@@ -900,8 +900,8 @@ function obsCsvCell(v){
 function obsCsvContent(tables){
   const lines=[];
   (tables||[]).forEach((t,i)=>{
-    if(tables.length>1){if(i)lines.push('');lines.push(obsCsvCell(t.title||''))}
-    lines.push(t.headers.map(obsCsvCell).join(','));
+    if(tables.length>1){if(i)lines.push('');lines.push(obsCsvCell(obsExportText(t.title||'')))}
+    lines.push(t.headers.map(header=>obsCsvCell(obsExportText(header))).join(','));
     for(const r of t.rows||[])lines.push(r.cells.map(obsCsvCell).join(','));
   });
   return '\ufeff'+lines.join('\r\n')+'\r\n';
@@ -909,7 +909,7 @@ function obsCsvContent(tables){
 function obsCsvFileName(title){
   const project=currentProject();
   const clean=s=>String(s||'').replace(/<[^>]+>/g,'').replace(/[\\/:*?"<>|\s]+/g,'_').replace(/^_+|_+$/g,'');
-  return `${clean(title)||'明细'}-${clean(project?.name||project?.id||'全部项目')}-${new Date().toISOString().slice(0,10)}.csv`;
+  return `${clean(obsExportText(title))||obsExportText('明细','details')}-${clean(project?.name||project?.id||obsExportText('全部项目'))}-${new Date().toISOString().slice(0,10)}.csv`;
 }
 function obsExportCsv(key){
   let item=null;
@@ -1475,7 +1475,7 @@ function obsOwnersCard(){
   const table=rows.length?`<div class="obs-tw"><table class="obs-table"><thead><tr><th>负责人</th><th>已交付</th><th>进行中</th><th>未交付</th><th>平均端到端</th><th>Tokens</th><th>成本</th></tr></thead><tbody>${rows.map(r=>`<tr class="run-row${filter==='user:'+r.id?' obs-row-hl':''}" data-obs-delivery="user:${escapeHTML(r.id)}"><td><b>${escapeHTML(r.name)}</b></td><td>${r.delivered}</td><td>${r.active}</td><td>${r.undelivered}</td><td>${r.durationLabel}</td><td>${formatTokens(r.tokens)}</td><td>${costLabel(r.costCny,r.costKnown)}</td></tr>`).join('')}</tbody></table></div>`:'';
   return obsCard('owners','按负责人','已交付 / 进行中 / 未交付；点一人筛选明细','',`<div class="obs-legend"><span><i style="background:var(--c1)"></i>已交付</span><span><i style="background:var(--c3)"></i>进行中</span><span><i style="background:var(--c4)"></i>未交付</span></div>${chart}${table}`,{expand:true});
 }
-function obsMrLabel(s){return s==='merged'?'<span class="obs-mr merged">已合入</span>':s==='integrated'?'<span class="obs-mr integrated">已合入基线</span>':({opened:'待合入',reopened:'重开',closed:'已关闭',none:'无 PR',unknown:'待查合入'}[s]||s||'—')}
+function obsMrLabel(s){return s==='merged'?`<span class="obs-mr merged">${obsExportText('已合入','Merged')}</span>`:s==='integrated'?`<span class="obs-mr integrated">${obsExportText('已合入基线','Merged into baseline')}</span>`:escapeHTML(obsExportText({opened:'待合入',reopened:'重开',closed:'已关闭',none:'无 PR',unknown:'待查合入'}[s]||s||'—'))}
 // A conversation requirement has no SOP status: its state is its MRs'.
 function obsDirectDeliveryText(it){
   if(it.delivered)return '对话直接交付';
@@ -1486,7 +1486,7 @@ function obsDirectDeliveryText(it){
   return '对话 · PR 待合入';
 }
 function obsDeliveryStatusText(it){return it.directDelivery?obsDirectDeliveryText(it):it.sopSucceeded?'SOP 成功':(runStatus(it.runStatus)||it.runStatus||'—')}
-function obsDeliveryStatusHTML(it){return `<span class="status ${escapeHTML(it.directDelivery?'':(it.runStatus||''))}">${escapeHTML(obsDeliveryStatusText(it))}</span>`}
+function obsDeliveryStatusHTML(it){return `<span class="status ${escapeHTML(it.directDelivery?'':(it.runStatus||''))}">${escapeHTML(obsExportText(obsDeliveryStatusText(it)))}</span>`}
 function obsDeliveryTableDef(all){
   const items=state.analytics?.deliveries||[];
   const filter=state.obsDeliveryFilter||'all';
@@ -1496,7 +1496,7 @@ function obsDeliveryTableDef(all){
     const mr=obsDeliveryMRHTML(it);
     const startedLanes=(it.lanes||[]).filter(l=>l.started);
     const sop=startedLanes.length?startedLanes.map(l=>`${l.label}${l.status==='succeeded'?'✓':''}`).join(' / '):(it.workflowName||it.workflowId);
-    return obsRow([`${obsSourceLabel(it.source)} ${escapeHTML(issue)}`,`<b>${escapeHTML(it.title||it.issueId)}</b>`,escapeHTML(sop),obsDeliveryStatusHTML(it),duration(it.durationMs),it.executionDurationMs?duration(it.executionDurationMs):'—',it.cycleDurationMs?duration(it.cycleDurationMs):'—',it.directDelivery?'对话':`${it.runCount||0} 次`,escapeHTML(obsUserName(it.userId)||'—'),formatTokens(it.tokens),costLabel(it.costCny,it.costKnown),mr,it.delivered?'已交付':'未交付'],`data-edit-issue="${escapeHTML(it.issueId)}"`,'run-row');
+    return obsRow([`${escapeHTML(obsExportText(obsSourceLabel(it.source)))} ${escapeHTML(issue)}`,`<b>${escapeHTML(it.title||it.issueId)}</b>`,escapeHTML(sop),obsDeliveryStatusHTML(it),duration(it.durationMs),it.executionDurationMs?duration(it.executionDurationMs):'—',it.cycleDurationMs?duration(it.cycleDurationMs):'—',it.directDelivery?obsExportText('对话','Conversation'):obsExportText(`${it.runCount||0} 次`,String(it.runCount||0)),escapeHTML(obsUserName(it.userId)||'—'),formatTokens(it.tokens),costLabel(it.costCny,it.costKnown),mr,obsExportText(it.delivered?'已交付':'未交付')],`data-edit-issue="${escapeHTML(it.issueId)}"`,'run-row');
   });
   return {key:'deliveries',title:'需求交付明细',tables:[{headers:['单号','标题','SOP','流程','端到端','执行耗时','周期','执行次数','负责人','Tokens','成本','PR','交付'],rows,pageKey:all?'':'obs-deliveries',empty:'还没有带需求上下文的运行'}],items,filter};
 }
@@ -1509,16 +1509,20 @@ function obsDeliveriesCard(){
   return obsCard('deliveries','需求交付明细','耗时为该需求最近一次执行的端到端时间；执行耗时 = 该需求全部执行按 SOP 节点求和；周期为首次执行到最后一次执行。「已合入 / 已交付」只统计默认分支。',`<button type="button" class="obs-btn" data-obs-export-csv="deliveries">${obsIcon('download')}CSV</button>`,body,{klass:'obs-deliveries'});
 }
 function obsPlain(v){return String(v==null?'':v).replace(/<[^>]+>/g,'')}
+function obsExportText(value,english){
+  const i18n=globalThis.window;
+  return english!==undefined&&i18n?.lfLang?.()==='en'?english:(i18n?.lfTranslate?.(String(value))??String(value));
+}
 function obsReportScope(){
   const project=currentProject();
-  const dim=obsScope()==='project'?'项目':'个人';
-  const who=obsScope()==='project'?(project?.name||project?.id||'当前项目'):(state.obsUserFilter?obsUserName(state.obsUserFilter):'全部成员');
-  const source=(state.obsSourceFilter?obsSourceLabel(state.obsSourceFilter):'全部需求来源')+' · '+({internal:'平台内执行',external:'外部工作流'}[state.obsOriginFilter]||'全部执行');
-  return {project:project?.name||project?.id||'全部项目', dim, who, source, at:new Date().toLocaleString()};
+  const dim=obsScope()==='project'?obsExportText('项目','Project'):obsExportText('个人','Personal');
+  const who=obsScope()==='project'?(project?.name||project?.id||obsExportText('当前项目')):(state.obsUserFilter?obsUserName(state.obsUserFilter):obsExportText('全部成员'));
+  const source=obsExportText(state.obsSourceFilter?obsSourceLabel(state.obsSourceFilter):'全部需求来源')+' · '+obsExportText({internal:'平台内执行',external:'外部工作流'}[state.obsOriginFilter]||'全部执行');
+  return {project:project?.name||project?.id||obsExportText('全部项目'), dim, who, source, at:new Date().toLocaleString(globalThis.window?.lfLang?.()==='en'?'en':undefined)};
 }
 function obsReportTable(title,headers,rows){
-  if(!rows)return `<section class="block"><h2>${title}</h2><p class="empty">暂无数据</p></section>`;
-  return `<section class="block"><h2>${title}</h2><table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></section>`;
+  if(!rows)return `<section class="block"><h2>${obsExportText(title)}</h2><p class="empty">${obsExportText('暂无数据')}</p></section>`;
+  return `<section class="block"><h2>${obsExportText(title)}</h2><table><thead><tr>${headers.map(h=>`<th>${obsExportText(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></section>`;
 }
 async function exportObsReport(){
   ensureObsUserFilter();
@@ -1537,7 +1541,7 @@ async function exportObsReport(){
     const scope=obsReportScope();
     const stamp=new Date().toISOString().slice(0,10);
     a.href=URL.createObjectURL(blob);
-    a.download=`LoopForge用量报告-${scope.project}-${scope.who}-${stamp}.html`;
+    a.download=`${obsExportText('LoopForge用量报告','LoopForge-usage-report')}-${scope.project}-${scope.who}-${stamp}.html`;
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),1500);
     toast('已导出 HTML 报告','ok');
@@ -1548,15 +1552,15 @@ function buildObsReportHTML(){
   const activity=state.analytics?.activity;
   const workflows=state.data.workflows||[];
   const stats=(state.analytics?.workflows||[]).map(w=>({...w,name:w.name||workflows.find(x=>x.id===w.key)?.name||w.key}));
-  const wfRows=stats.map(w=>`<tr><td>${escapeHTML(w.name)}</td><td>${w.runs}</td><td>${percent(w.successRate)}</td><td>${w.qualityUnknownRuns===w.runs?'—':percent(w.reworkRate)}</td><td>${formatTokens(w.tokens)}</td><td>${obsPlain(costLabel(w.costCny,!w.costUnknownRuns))}</td><td>${w.averageExecutionDurationMs?duration(w.averageExecutionDurationMs):'—'}</td></tr>`).join('');
-  const modelRows=(state.analytics?.models||[]).map(m=>`<tr><td>${escapeHTML(m.name||m.key)}</td><td>${m.runs}</td><td>${formatTokens(m.tokens)}</td><td>${formatTokens(m.inputTokens)} / ${formatTokens(m.outputTokens)}</td><td>${m.tokenSharePct!=null?m.tokenSharePct.toFixed(1)+'%':'—'}</td><td>${obsPlain(costLabel(m.costCny,!m.costUnknownRuns))}</td></tr>`).join('');
-  const userRows=(state.analytics?.userUsage||[]).slice(0,40).map(u=>`<tr><td>${escapeHTML(u.date)}</td><td>${escapeHTML(obsUserName(u.userId))}</td><td>${u.runs}</td><td>${formatTokens(u.tokens)}</td><td>${formatTokens(u.inputTokens)} / ${formatTokens(u.outputTokens)}</td><td>${obsPlain(costLabel(u.costCny,u.costKnown))}</td></tr>`).join('');
-  const memberRows=obsUserTotals().map(u=>`<tr><td>${escapeHTML(obsUserName(u.userId))}</td><td>${u.runs}</td><td>${u.success||0}</td><td>${u.failed||0}</td><td>${formatTokens(u.tokens)}</td><td>${formatTokens(u.inputTokens)} / ${formatTokens(u.outputTokens)}</td><td>${obsPlain(costLabel(u.costCny,u.costKnown))}</td></tr>`).join('');
-  const srcRows=(state.analytics?.issueSources||[]).map(s=>`<tr><td>${obsSourceLabel(s.key)}</td><td>${s.runs}</td><td>${s.succeeded||0}</td><td>${s.completedIssues||0}</td><td>${formatTokens(s.tokens)}</td><td>${obsPlain(costLabel(s.costCny,!s.costUnknownRuns))}</td></tr>`).join('');
-  const versionRows=(state.analytics?.workflowVersions||[]).map(v=>`<tr><td>${escapeHTML(v.name||v.workflowId)}</td><td>v${v.version}</td><td>${v.runs}</td><td>${percent(v.successRate)}</td><td>${formatTokens(v.tokens)}</td><td>${obsPlain(costLabel(v.costCny,!v.costUnknownRuns))}</td></tr>`).join('');
-  const trendRows=obsTrendWindow(state.analytics?.trend||[]).slice().reverse().map(t=>`<tr><td>${escapeHTML(obsTrendLabel(t))}</td><td>${t.runs}</td><td>${t.issues||0}</td><td>${t.succeeded}</td><td>${t.failed||0}</td><td>${formatTokens(t.tokens)}</td><td>${obsPlain(costLabel(t.costCny,obsCostKnown(t)))}</td><td>${t.executionDurationMs?duration(t.executionDurationMs):'—'}</td></tr>`).join('');
-  const projectRows=(state.obsCrossProject?.projectUsage||state.analytics?.projectUsage||[]).map(r=>`<tr><td>${escapeHTML(obsProjectName(r.projectId))}</td><td>${r.runs||0}</td><td>${r.uniqueIssues||0}</td><td>${formatTokens(r.tokens)}</td><td>${obsPlain(costLabel(r.costCny,r.costKnown))}</td></tr>`).join('');
-  const deliveryRows=(state.analytics?.deliveries||[]).slice(0,80).map(it=>`<tr><td>${obsSourceLabel(it.source)} ${escapeHTML(String(it.externalIid?('#'+it.externalIid):(it.externalId||it.issueId)))}</td><td>${escapeHTML(it.title||it.issueId)}</td><td>${escapeHTML(it.workflowName||it.workflowId)}</td><td>${escapeHTML(obsDeliveryStatusText(it))}</td><td>${escapeHTML(obsUserName(it.userId))}</td><td>${formatTokens(it.tokens)}</td><td>${obsPlain(costLabel(it.costCny,it.costKnown))}</td><td>${obsDeliveryMRHTML(it)}</td><td>${it.delivered?'已交付':'未交付'}</td></tr>`).join('');
+  const wfRows=stats.map(w=>`<tr><td>${escapeHTML(w.name)}</td><td>${w.runs}</td><td>${percent(w.successRate)}</td><td>${w.qualityUnknownRuns===w.runs?'—':percent(w.reworkRate)}</td><td>${formatTokens(w.tokens)}</td><td>${obsExportText(obsPlain(costLabel(w.costCny,!w.costUnknownRuns)))}</td><td>${w.averageExecutionDurationMs?duration(w.averageExecutionDurationMs):'—'}</td></tr>`).join('');
+  const modelRows=(state.analytics?.models||[]).map(m=>`<tr><td>${escapeHTML(m.name||m.key)}</td><td>${m.runs}</td><td>${formatTokens(m.tokens)}</td><td>${formatTokens(m.inputTokens)} / ${formatTokens(m.outputTokens)}</td><td>${m.tokenSharePct!=null?m.tokenSharePct.toFixed(1)+'%':'—'}</td><td>${obsExportText(obsPlain(costLabel(m.costCny,!m.costUnknownRuns)))}</td></tr>`).join('');
+  const userRows=(state.analytics?.userUsage||[]).slice(0,40).map(u=>`<tr><td>${escapeHTML(u.date)}</td><td>${escapeHTML(obsUserName(u.userId))}</td><td>${u.runs}</td><td>${formatTokens(u.tokens)}</td><td>${formatTokens(u.inputTokens)} / ${formatTokens(u.outputTokens)}</td><td>${obsExportText(obsPlain(costLabel(u.costCny,u.costKnown)))}</td></tr>`).join('');
+  const memberRows=obsUserTotals().map(u=>`<tr><td>${escapeHTML(obsUserName(u.userId))}</td><td>${u.runs}</td><td>${u.success||0}</td><td>${u.failed||0}</td><td>${formatTokens(u.tokens)}</td><td>${formatTokens(u.inputTokens)} / ${formatTokens(u.outputTokens)}</td><td>${obsExportText(obsPlain(costLabel(u.costCny,u.costKnown)))}</td></tr>`).join('');
+  const srcRows=(state.analytics?.issueSources||[]).map(s=>`<tr><td>${escapeHTML(obsExportText(obsSourceLabel(s.key)))}</td><td>${s.runs}</td><td>${s.succeeded||0}</td><td>${s.completedIssues||0}</td><td>${formatTokens(s.tokens)}</td><td>${obsExportText(obsPlain(costLabel(s.costCny,!s.costUnknownRuns)))}</td></tr>`).join('');
+  const versionRows=(state.analytics?.workflowVersions||[]).map(v=>`<tr><td>${escapeHTML(v.name||v.workflowId)}</td><td>v${v.version}</td><td>${v.runs}</td><td>${percent(v.successRate)}</td><td>${formatTokens(v.tokens)}</td><td>${obsExportText(obsPlain(costLabel(v.costCny,!v.costUnknownRuns)))}</td></tr>`).join('');
+  const trendRows=obsTrendWindow(state.analytics?.trend||[]).slice().reverse().map(t=>`<tr><td>${escapeHTML(obsExportText(obsTrendLabel(t)))}</td><td>${t.runs}</td><td>${t.issues||0}</td><td>${t.succeeded}</td><td>${t.failed||0}</td><td>${formatTokens(t.tokens)}</td><td>${obsExportText(obsPlain(costLabel(t.costCny,obsCostKnown(t))))}</td><td>${t.executionDurationMs?duration(t.executionDurationMs):'—'}</td></tr>`).join('');
+  const projectRows=(state.obsCrossProject?.projectUsage||state.analytics?.projectUsage||[]).map(r=>`<tr><td>${escapeHTML(obsProjectName(r.projectId))}</td><td>${r.runs||0}</td><td>${r.uniqueIssues||0}</td><td>${formatTokens(r.tokens)}</td><td>${obsExportText(obsPlain(costLabel(r.costCny,r.costKnown)))}</td></tr>`).join('');
+  const deliveryRows=(state.analytics?.deliveries||[]).slice(0,80).map(it=>`<tr><td>${escapeHTML(obsExportText(obsSourceLabel(it.source)))} ${escapeHTML(String(it.externalIid?('#'+it.externalIid):(it.externalId||it.issueId)))}</td><td>${escapeHTML(it.title||it.issueId)}</td><td>${escapeHTML(it.workflowName||it.workflowId)}</td><td>${escapeHTML(obsExportText(obsDeliveryStatusText(it)))}</td><td>${escapeHTML(obsUserName(it.userId))}</td><td>${formatTokens(it.tokens)}</td><td>${obsExportText(obsPlain(costLabel(it.costCny,it.costKnown)))}</td><td>${obsDeliveryMRHTML(it)}</td><td>${obsExportText(it.delivered?'已交付':'未交付')}</td></tr>`).join('');
   const kpis=[
     ...(activity?[
       ['会话数',activity.sessions||0,'普通对话 · 按创建时间'],
@@ -1568,15 +1572,18 @@ function buildObsReportHTML(){
     ['运行',summary.totalRuns||0,`${summary.activeRuns||0} 进行中`],
     ['成功率',summary.totalRuns?percent(summary.successRate):'—',`${summary.succeededRuns||0} 成功 / ${summary.failedRuns||0} 失败`],
     ['一次通过',summary.totalRuns?percent(summary.firstPassRate):'—',`${summary.reworkedRuns||0} 次返工`],
-    ['Token',formatTokens(summary.totalTokens),`入 ${formatTokens(summary.inputTokens)} / 出 ${formatTokens(summary.outputTokens)}`],
-    ['成本',obsPlain(costLabel(summary.totalCostCny,obsCostKnown(summary))),obsCostUnknown(summary)?`${obsCostUnknown(summary)} 次未识别`:'已识别'],
+    ['Token',formatTokens(summary.totalTokens),obsExportText(
+      `入 ${formatTokens(summary.inputTokens)} / 出 ${formatTokens(summary.outputTokens)}`,
+      `Input ${formatTokens(summary.inputTokens)} / Output ${formatTokens(summary.outputTokens)}`
+    )],
+    ['成本',obsExportText(obsPlain(costLabel(summary.totalCostCny,obsCostKnown(summary)))),obsCostUnknown(summary)?`${obsCostUnknown(summary)} 次未识别`:'已识别'],
     ['缓存命中',(Number(summary.inputTokens||0)+Number(summary.cacheReadTokens||0))?Number(summary.cacheHitRate||0).toFixed(0)+'%':'—',`缓存读 ${formatTokens(summary.cacheReadTokens||0)}`],
     ['P95 执行',summary.executionP95DurationMs?duration(summary.executionP95DurationMs):'—',summary.executionAverageDurationMs?`平均 ${duration(summary.executionAverageDurationMs)}`:'—'],
-    ['对话改代码',`${summary.conversationIssues||0} 个需求`,`${summary.conversationWorkspaces||0} 个工作区 · ${formatTokens(summary.conversationTokens||0)} · ${obsPlain(costLabel(summary.conversationCostCny||0,!summary.conversationCostUnknownWorkspaces))}`],
+    ['对话改代码',`${summary.conversationIssues||0} 个需求`,`${summary.conversationWorkspaces||0} 个工作区 · ${formatTokens(summary.conversationTokens||0)} · ${obsExportText(obsPlain(costLabel(summary.conversationCostCny||0,!summary.conversationCostUnknownWorkspaces)))}`],
     ['已交付',d.delivered||0,`${d.issues||0} 个有执行的单`],
     ['PR 已合入',d.mrMerged||0,`${d.mrIntegrated||0} 已合入基线`],
-  ].map(([l,v,f])=>`<article><span>${l}</span><b>${v}</b><small>${f}</small></article>`).join('');
-  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(scope.project)} 用量报告</title>
+  ].map(([l,v,f])=>`<article><span>${obsExportText(l)}</span><b>${obsExportText(v)}</b><small>${obsExportText(f)}</small></article>`).join('');
+  return `<!doctype html><html lang="${obsExportText('zh-CN','en')}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(scope.project)} ${obsExportText('用量报告')}</title>
 <style>
 :root{--text:#152033;--muted:#5b6b82;--line:#e6ebf3;--bg:#f5f7fb;--card:#fff;--blue:#3b6cff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans SC",sans-serif}
@@ -1595,8 +1602,8 @@ th{text-align:left;color:var(--muted);font-size:11px;padding:8px;border-bottom:1
 @media print{body{background:#fff}.wrap{padding:0}.kpis article,.block{break-inside:avoid}}
 @media(max-width:800px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style></head><body><div class="wrap">
-<header><p class="eyebrow">LoopForge</p><h1>用量分析报告</h1><p>效果看成功率和一次通过，投入看 Token、成本和执行耗时。交付看 SOP 是否跑完、PR 是否合入。</p>
-<div class="meta"><span>项目 ${escapeHTML(scope.project)}</span><span>维度 ${escapeHTML(scope.dim)}</span><span>${obsScope()==='project'?'范围':'责任人'} ${escapeHTML(scope.who)}</span><span>来源 ${escapeHTML(scope.source)}</span><span>生成于 ${escapeHTML(scope.at)}</span></div></header>
+<header><p class="eyebrow">LoopForge</p><h1>${obsExportText('用量分析报告')}</h1><p>${obsExportText('效果看成功率和一次通过，投入看 Token、成本和执行耗时。交付看 SOP 是否跑完、PR 是否合入。')}</p>
+<div class="meta"><span>${obsExportText('项目','Project')} ${escapeHTML(scope.project)}</span><span>${obsExportText('维度')} ${escapeHTML(scope.dim)}</span><span>${obsExportText(obsScope()==='project'?'范围':'责任人')} ${escapeHTML(scope.who)}</span><span>${obsExportText('来源')} ${escapeHTML(scope.source)}</span><span>${obsExportText('生成于')} ${escapeHTML(scope.at)}</span></div></header>
 <section class="kpis">${kpis}</section>
 ${obsReportTable('SOP 一览',['SOP','运行','成功率','返工率','Tokens','成本','均执行'],wfRows)}
 ${obsReportTable('各模型用量',['模型','调用','Tokens','输入 / 输出','Token 占比','成本'],modelRows)}
@@ -1607,7 +1614,7 @@ ${obsReportTable('SOP 版本对比',['SOP','版本','运行','成功率','Tokens
 ${obsReportTable(obsGrainCaption()+'趋势',['周期','运行','需求','成功','失败','Tokens','成本','执行耗时'],trendRows)}
 ${projectRows?obsReportTable('各项目用量',['项目','运行','需求','Tokens','成本'],projectRows):''}
 ${obsReportTable('交付明细',['单号','标题','SOP','流程','责任人','Tokens','成本','PR','交付'],deliveryRows)}
-<footer>由 LoopForge 用量分析导出。日志与 Trace 请在运行记录中查看。</footer>
+<footer>${obsExportText('由 LoopForge 用量分析导出。日志与 Trace 请在运行记录中查看。')}</footer>
 </div></body></html>`;
 }
 

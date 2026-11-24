@@ -1,3 +1,6 @@
+import "../../web/boot.js";
+import "../../web/i18n-en.js";
+import "../../web/i18n.js";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";

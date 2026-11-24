@@ -189,5 +189,9 @@ func parseGongfengOAuthState(raw, secret string) (gongfengOAuthState, error) {
 }
 
 func gongfengOAuthPage(c *gin.Context, status int, title, message string) {
-	c.Data(status, "text/html; charset=utf-8", []byte("<!doctype html><meta charset=utf-8><title>"+html.EscapeString(title)+"</title><h1>"+html.EscapeString(title)+"</h1><p>"+message+"</p><p><a href='/#/settings'>返回个人配置</a></p>"))
+	page := `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<script src="/boot.js"></script><script src="/i18n-en.js"></script><script src="/i18n.js"></script>
+<title>` + html.EscapeString(title) + `</title></head><body><h1>` + html.EscapeString(title) +
+		`</h1><p>` + message + `</p><p><a href="/#/settings">返回个人配置</a></p></body></html>`
+	c.Data(status, "text/html; charset=utf-8", []byte(page))
 }

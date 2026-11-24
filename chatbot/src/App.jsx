@@ -1143,20 +1143,22 @@ export default function App() {
           if (innerWidth < 850) setSidebar(false);
         }}
       >
-        <span>{s.displayTitle || s.title || "新对话"}</span>
+        <span data-i18n-data={s.displayTitle || s.title ? "" : undefined}>{s.displayTitle || s.title || "新对话"}</span>
         {scheduledSession(s) ? (
           <span className="session-project-tag session-source-tag" title="定时任务产生的会话">
             定时
           </span>
         ) : null}
         {options.projectName ? (
-          <span className="session-project-tag">{options.projectName}</span>
+          <span className="session-project-tag" data-i18n-data>{options.projectName}</span>
         ) : null}
         {runState ? (
           <span
             className="session-run"
             data-run-state={runState.state}
-            title={`运行状态：${runState.label}`}
+            title={window.lfLang?.() === "en"
+              ? `Run status: ${window.lfTranslate(runState.label)}`
+              : `运行状态：${runState.label}`}
           >
             {runState.label}
           </span>
@@ -2392,9 +2394,9 @@ export default function App() {
                       >
                         <HarnessIcon name="new-request" size={16} />
                         <span>
-                          {s.displayTitle || s.title}
+                          <span data-i18n-data>{s.displayTitle || s.title}</span>
                           <small>
-                            {sessionProjectName(s.projectId, chat.projects)}
+                            <span data-i18n-data>{sessionProjectName(s.projectId, chat.projects)}</span>
                             {s.archived ? " · 已归档" : ""}
                           </small>
                         </span>

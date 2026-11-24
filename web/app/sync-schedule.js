@@ -503,7 +503,7 @@ function renderScheduleJobs(){
   const triggerHint=$('#aiScheduleTriggerHint');if(triggerHint)triggerHint.textContent=canRun?'按计划扫描本项目选定状态、尚未跑过 SOP 的需求，通过基线门禁后派发 SOP。每个项目使用一份触发配置。':disabled;
   $('#aiScheduleRuntimeHint').textContent=!state.projectFilter?'请先在顶栏选择项目，再管理 AI 定时任务。':canRun?'任务以最后保存人的身份和完全权限执行。关闭页面后，任务会继续运行。':disabled;
   $('#aiScheduleProjectName').textContent=currentProject()?.name||'当前项目';
-  $('#aiScheduleCount').textContent=`${assistant.length} 个任务`;
+  $('#aiScheduleCount').textContent=lfT(`${assistant.length} 个任务`, `${assistant.length} task${assistant.length===1?'':'s'}`);
   $('#newAISchedule').disabled=!state.projectFilter;
   const editTrigger=$('#editScheduleTrigger');if(editTrigger){editTrigger.disabled=!state.projectFilter;editTrigger.lastChild.textContent=dispatch.length?'编辑触发配置':'配置触发'}
   const triggerList=$('#aiScheduleTriggerList');

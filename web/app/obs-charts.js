@@ -84,8 +84,9 @@ function obsValueAxis(t,formatter,extra){
   return Object.assign({type:'value',splitNumber:4,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:t.muted2,fontSize:10.5,formatter},splitLine:{lineStyle:{color:t.line,type:[3,4]}}},extra||{});
 }
 function obsBarDelay(o,step){return o.reduced?0:(idx=>idx*(step||35))}
+function obsChartText(text){return typeof window==='undefined'?text:window.lfTranslate?.(String(text))??text}
 function obsTooltipRows(title,rows,note){
-  return `<div class="obs-tt"><b>${obsEsc(title)}</b>${rows.map(([k,v])=>`<div><span>${obsEsc(k)}</span><em>${obsEsc(v)}</em></div>`).join('')}${note?`<small>${obsEsc(note)}</small>`:''}</div>`;
+  return `<div class="obs-tt"><b>${obsEsc(title)}</b>${rows.map(([k,v])=>`<div><span>${obsEsc(obsChartText(k))}</span><em>${obsEsc(v)}</em></div>`).join('')}${note?`<small>${obsEsc(obsChartText(note))}</small>`:''}</div>`;
 }
 
 // ---------- 趋势 ----------
@@ -120,7 +121,7 @@ function obsTrendOption(points,mode,sel,prev,opts){
   const o=obsChartOpts(opts),t=o.theme;
   points=Array.isArray(points)?points:[];
   mode=OBS_TREND_MODES.includes(mode)?mode:'tokens';
-  const labels=points.map(p=>o.label(p));
+  const labels=points.map(p=>obsChartText(o.label(p)));
   const selIdx=points.findIndex(p=>p&&p.date===sel);
   const fmt=obsTrendFormat(mode,o);
   const prevValues=obsTrendPrevValues(points,prev,mode);
@@ -141,12 +142,12 @@ function obsTrendOption(points,mode,sel,prev,opts){
   let series;
   if(mode==='comp'){
     const parts=[['输入','inputTokens',t.c1],['输出','outputTokens',t.c2],['缓存读','cacheReadTokens',t.c3],['缓存写','cacheWriteTokens',t.c4]];
-    series=parts.map(([name,field,color],i)=>({name,type:'line',stack:'tokens',symbol:'none',smooth:false,lineStyle:{width:0},areaStyle:{color,opacity:1},itemStyle:{color},data:points.map(p=>Number(p?.[field]||0)),animationDelay:o.reduced?0:i*90,markArea:i===0?selArea:undefined}));
+    series=parts.map(([name,field,color],i)=>({name:obsChartText(name),type:'line',stack:'tokens',symbol:'none',smooth:false,lineStyle:{width:0},areaStyle:{color,opacity:1},itemStyle:{color},data:points.map(p=>Number(p?.[field]||0)),animationDelay:o.reduced?0:i*90,markArea:i===0?selArea:undefined}));
   }else{
     const values=points.map(p=>obsTrendModeValue(p,mode));
     series=[
-      ...(prevValues?[{name:'上一周期',type:'line',symbol:'none',silent:true,z:1,lineStyle:{color:t.muted2,width:1.5,type:'dashed'},itemStyle:{color:t.muted2},data:prevValues,connectNulls:false,animationDelay:o.reduced?0:300}]:[]),
-      {name:'本期',type:'line',symbol:'circle',symbolSize:points.length>16?0:5,showSymbol:points.length<=16,z:2,lineStyle:{color:t.c1,width:1.8},itemStyle:{color:t.c1,borderColor:t.panel,borderWidth:1.5},areaStyle:{color:t.c1,opacity:.08},data:values,connectNulls:true,animationDuration:o.reduced?0:900,
+      ...(prevValues?[{name:obsChartText('上一周期'),type:'line',symbol:'none',silent:true,z:1,lineStyle:{color:t.muted2,width:1.5,type:'dashed'},itemStyle:{color:t.muted2},data:prevValues,connectNulls:false,animationDelay:o.reduced?0:300}]:[]),
+      {name:obsChartText('本期'),type:'line',symbol:'circle',symbolSize:points.length>16?0:5,showSymbol:points.length<=16,z:2,lineStyle:{color:t.c1,width:1.8},itemStyle:{color:t.c1,borderColor:t.panel,borderWidth:1.5},areaStyle:{color:t.c1,opacity:.08},data:values,connectNulls:true,animationDuration:o.reduced?0:900,
         markArea:selArea,
         markPoint:selIdx>=0&&values[selIdx]!=null?{symbol:'circle',symbolSize:10,silent:true,label:{show:false},itemStyle:{color:t.c1,borderColor:t.panel,borderWidth:2},data:[{coord:[selIdx,values[selIdx]]}],animation:!o.reduced}:undefined},
     ];
@@ -207,7 +208,7 @@ function obsHeatOption(cells,metric,opts){
   const hours=Array.from({length:24},(_,h)=>String(h));
   return obsChartBase(o,{
     grid:{left:6,right:6,top:4,bottom:4,containLabel:true},
-    tooltip:{...obsTooltipBase(t),trigger:'item',formatter:p=>{const [h,d]=p.value;return obsTooltipRows(`${obsWeekdayLabels()[d]} ${String(h).padStart(2,'0')}:00`,[['运行',String(p.data.runs)+' 次'],['Token',o.fmtTokens(p.data.tokens)]])}},
+    tooltip:{...obsTooltipBase(t),trigger:'item',formatter:p=>{const [h,d]=p.value;return obsTooltipRows(`${obsWeekdayLabels()[d]} ${String(h).padStart(2,'0')}:00`,[['运行',obsChartText(String(p.data.runs)+' 次')],['Token',o.fmtTokens(p.data.tokens)]])}},
     xAxis:{type:'category',data:hours,splitArea:{show:false},axisLine:{show:false},axisTick:{show:false},axisLabel:{color:t.muted2,fontSize:10,interval:5}},
     yAxis:{type:'category',data:obsWeekdayLabels(),inverse:true,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:t.muted2,fontSize:10}},
     visualMap:{show:false,min:0,max:Math.max(1,max),inRange:{color:[t.panel2,t.c1]}},
@@ -233,7 +234,7 @@ function obsFunnelStats(stages){
 function obsFunnelOption(stages,opts){
   const o=obsChartOpts(opts),t=o.theme;
   const stats=obsFunnelStats(stages);
-  const list=stats.stages;
+  const list=stats.stages.map(stage=>({...stage,name:obsChartText(stage.name)}));
   const active=opts&&opts.active!=null?opts.active:-1;
   const max=Math.max(1,...list.map(s=>s.value));
   return obsChartBase(o,{
@@ -242,7 +243,7 @@ function obsFunnelOption(stages,opts){
     xAxis:{type:'value',max,show:false},
     yAxis:{type:'category',inverse:true,data:list.map(s=>s.name),axisLine:{show:false},axisTick:{show:false},axisLabel:{color:t.muted,fontSize:12,formatter:(v,i)=>i===active?`{a|${v}}`:v,rich:{a:{color:t.text,fontWeight:600,fontSize:12}}}},
     series:[{type:'bar',barWidth:18,showBackground:true,backgroundStyle:{color:t.panel2,borderRadius:4},itemStyle:{borderRadius:4},
-      label:{show:true,position:'right',distance:8,formatter:p=>{const s=list[p.dataIndex];const conv=s.conv==null?'':`  {${s.worst?'w':'c'}|↓ ${Math.round(s.drop)}%${s.worst?' · 最大流失':''}}`;return `{v|${s.value}}${conv}`},rich:{v:{color:t.text,fontWeight:600,fontSize:14},c:{color:t.muted2,fontSize:10.5},w:{color:t.red,fontSize:10.5,fontWeight:500}}},
+      label:{show:true,position:'right',distance:8,formatter:p=>{const s=list[p.dataIndex];const conv=s.conv==null?'':`  {${s.worst?'w':'c'}|↓ ${Math.round(s.drop)}%${s.worst?` · ${obsChartText('最大流失')}`:''}}`;return `{v|${s.value}}${conv}`},rich:{v:{color:t.text,fontWeight:600,fontSize:14},c:{color:t.muted2,fontSize:10.5},w:{color:t.red,fontSize:10.5,fontWeight:500}}},
       data:list.map((s,i)=>({value:s.value,itemStyle:{color:i===list.length-1||i===active?t.c1:t.c2}})),
       animationDelay:obsBarDelay(o,90)}],
   });
@@ -257,7 +258,7 @@ function obsOwnersOption(rows,opts){
     tooltip:{...obsTooltipBase(t),trigger:'axis',axisPointer:{type:'shadow',shadowStyle:{color:t.text,opacity:.04}},formatter:params=>{const r=rows[params[0]?.dataIndex];if(!r)return '';return obsTooltipRows(r.name,[['已交付',String(r.delivered||0)],['进行中',String(r.active||0)],['未交付',String(r.undelivered||0)],['端到端',String(r.durationLabel||'—')],['Tokens',o.fmtTokens(r.tokens)]])}},
     xAxis:{type:'value',show:false},
     yAxis:{type:'category',inverse:true,data:names,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:t.muted,fontSize:12,width:72,overflow:'truncate'}},
-    series:parts.map(([name,field,color])=>({name,type:'bar',stack:'owners',barWidth:10,itemStyle:{color},data:rows.map(r=>Number(r[field]||0)),animationDelay:obsBarDelay(o,60)})),
+    series:parts.map(([name,field,color])=>({name:obsChartText(name),type:'bar',stack:'owners',barWidth:10,itemStyle:{color},data:rows.map(r=>Number(r[field]||0)),animationDelay:obsBarDelay(o,60)})),
   });
 }
 
@@ -277,17 +278,17 @@ function obsDurationAxis(max){
 function obsPhaseStackOption(points,opts){
   const o=obsChartOpts(opts),t=o.theme;
   points=Array.isArray(points)?points:[];
-  const labels=points.map(p=>o.label(p));
+  const labels=points.map(p=>obsChartText(o.label(p)));
   const sums=obsPhaseSums(points);
   const fd=v=>o.fmtDuration(v);
   const delay=obsBarDelay(o,points.length>60?4:30);
-  const series=OBS_PHASES.map(([key,name,color],i)=>({name,type:'bar',stack:'phase',barMaxWidth:36,itemStyle:{color:t[color],borderRadius:i===OBS_PHASES.length-1?[2,2,0,0]:0},
+  const series=OBS_PHASES.map(([key,name,color],i)=>({name:obsChartText(name),type:'bar',stack:'phase',barMaxWidth:36,itemStyle:{color:t[color],borderRadius:i===OBS_PHASES.length-1?[2,2,0,0]:0},
     data:points.map((p,j)=>sums[j]==null?null:(p[key]==null?0:Number(p[key]))),animationDelay:delay}));
-  series.push({name:'合计',type:'bar',stack:'phase',silent:true,barMaxWidth:36,itemStyle:{color:'transparent'},data:sums.map(v=>v==null?null:0),animationDelay:delay,
+  series.push({name:obsChartText('合计'),type:'bar',stack:'phase',silent:true,barMaxWidth:36,itemStyle:{color:'transparent'},data:sums.map(v=>v==null?null:0),animationDelay:delay,
     label:{show:points.length<=OBS_PHASE_TOP_LABEL_MAX,position:'top',color:t.text,fontWeight:600,fontSize:11,formatter:p=>sums[p.dataIndex]==null?'':fd(sums[p.dataIndex])}});
   return obsChartBase(o,{
     grid:{left:6,right:8,top:34,bottom:4,containLabel:true},
-    legend:{data:OBS_PHASES.map(([,name])=>name),top:0,right:0,icon:'roundRect',itemWidth:9,itemHeight:9,itemGap:14,textStyle:{color:t.muted2,fontSize:11},inactiveColor:t.lineStrong},
+    legend:{data:OBS_PHASES.map(([,name])=>obsChartText(name)),top:0,right:0,icon:'roundRect',itemWidth:9,itemHeight:9,itemGap:14,textStyle:{color:t.muted2,fontSize:11},inactiveColor:t.lineStrong},
     tooltip:{...obsTooltipBase(t),trigger:'axis',axisPointer:{type:'shadow',shadowStyle:{color:t.text,opacity:.04}},formatter:params=>{
       const list=Array.isArray(params)?params:[params];
       const idx=list[0]?list[0].dataIndex:-1;
@@ -295,8 +296,8 @@ function obsPhaseStackOption(points,opts){
       if(!p)return '';
       if(sums[idx]==null)return obsTooltipRows(labels[idx],[],'当日没有完成项样本');
       const samples=p.samples||{};
-      const rows=OBS_PHASES.map(([key,name])=>[name,p[key]==null?'待采集':fd(p[key])+(samples[key]!=null?`（${samples[key]} 条）`:'')]);
-      rows.push(['三阶段均值之和',fd(sums[idx])],['已采集耗时（按条平均）',p.total==null?'待采集':fd(p.total)],['完成项样本',`${Number(p.deliveries)||0} 条`]);
+      const rows=OBS_PHASES.map(([key,name])=>[name,p[key]==null?obsChartText('待采集'):fd(p[key])+(samples[key]!=null?obsChartText(`（${samples[key]} 条）`):'')]);
+      rows.push(['三阶段均值之和',fd(sums[idx])],['已采集耗时（按条平均）',p.total==null?obsChartText('待采集'):fd(p.total)],['完成项样本',obsChartText(`${Number(p.deliveries)||0} 条`)]);
       return obsTooltipRows(labels[idx],rows);
     }},
     xAxis:obsCategoryAxis(t,labels),
@@ -311,9 +312,9 @@ function obsMetricTrendOption(points,spec,opts){
   spec=spec||{};
   const get=typeof spec.get==='function'?spec.get:(()=>null);
   const fmt=typeof spec.format==='function'?spec.format:(v=>String(v));
-  const name=spec.name||'';
+  const name=obsChartText(spec.name||'');
   const bar=spec.kind==='bar';
-  const labels=points.map(p=>o.label(p));
+  const labels=points.map(p=>obsChartText(o.label(p)));
   const values=points.map(p=>{const v=get(p);return v==null||!Number.isFinite(Number(v))?null:Number(v)});
   const known=values.filter(v=>v!=null).length;
   const tooltip={...obsTooltipBase(t),trigger:'axis',axisPointer:bar?{type:'shadow',shadowStyle:{color:t.text,opacity:.04}}:{type:'line',lineStyle:{color:t.lineStrong}},formatter:params=>{
@@ -321,7 +322,7 @@ function obsMetricTrendOption(points,spec,opts){
     const idx=list[0]?list[0].dataIndex:-1;
     const p=points[idx];
     if(!p)return '';
-    const rows=[[name,values[idx]==null?(spec.emptyLabel||'—'):fmt(values[idx])]];
+    const rows=[[name,values[idx]==null?obsChartText(spec.emptyLabel||'—'):fmt(values[idx])]];
     if(typeof spec.rows==='function')rows.push(...spec.rows(p));
     return obsTooltipRows(labels[idx],rows);
   }};
@@ -340,7 +341,7 @@ function obsMetricTrendOption(points,spec,opts){
 // slices: [{label,value}]；opts.center = {value, unit} 显示在环心。颜色按原始下标取，0 值分片不画但保留图例对应关系。
 function obsSliceDonutOption(slices,opts){
   const o=obsChartOpts(opts),t=o.theme,pal=obsBreakdownPalette(t);
-  const list=(Array.isArray(slices)?slices:[]).map((s,i)=>({name:String(s?.label??s?.name??'—'),value:Math.max(0,Number(s?.value)||0),itemStyle:{color:pal[Math.min(i,pal.length-1)]}}));
+  const list=(Array.isArray(slices)?slices:[]).map((s,i)=>({name:obsChartText(String(s?.label??s?.name??'—')),value:Math.max(0,Number(s?.value)||0),itemStyle:{color:pal[Math.min(i,pal.length-1)]}}));
   const total=list.reduce((n,s)=>n+s.value,0);
   const center=opts&&opts.center;
   const extra={
@@ -348,7 +349,7 @@ function obsSliceDonutOption(slices,opts){
     series:[{type:'pie',radius:['68%','82%'],center:['50%','50%'],avoidLabelOverlap:true,minAngle:2,padAngle:1,label:{show:false},labelLine:{show:false},itemStyle:{borderColor:t.panel,borderWidth:2},emphasis:{scale:true,scaleSize:4,label:{show:false}},
       animationType:'expansion',animationDuration:o.reduced?0:700,data:list.filter(s=>s.value>0)}],
   };
-  if(center)extra.title={text:String(center.value??''),subtext:String(center.unit||''),left:'center',top:'center',itemGap:2,textStyle:{color:t.text,fontSize:20,fontWeight:650},subtextStyle:{color:t.muted2,fontSize:11}};
+  if(center)extra.title={text:String(center.value??''),subtext:obsChartText(String(center.unit||'')),left:'center',top:'center',itemGap:2,textStyle:{color:t.text,fontSize:20,fontWeight:650},subtextStyle:{color:t.muted2,fontSize:11}};
   return obsChartBase(o,extra);
 }
 

@@ -162,7 +162,7 @@ class ObserverStub {
   takeRecords() { return []; }
 }
 
-export async function loadApp({ routes = [], hash = '', dispatchReady = true, origin = 'http://127.0.0.1' } = {}) {
+export async function loadApp({ routes = [], hash = '', dispatchReady = true, origin = 'http://127.0.0.1', language } = {}) {
   const html = await readFile(path.join(WEB_ROOT, 'index.html'), 'utf8');
   const dom = new JSDOM(html, {
     runScripts: 'outside-only',
@@ -170,6 +170,8 @@ export async function loadApp({ routes = [], hash = '', dispatchReady = true, or
     url: `${origin}/${hash ? `#${hash.replace(/^#/, '')}` : ''}`,
   });
   const { window } = dom;
+  if (language) window.localStorage.setItem('loopforge.lang', language);
+  const nativeMutationObserver = window.MutationObserver;
   const router = createFetchRouter(routes);
 
   window.fetch = router.fetch;
@@ -240,7 +242,10 @@ export async function loadApp({ routes = [], hash = '', dispatchReady = true, or
   const context = dom.getInternalVMContext();
   const sources = await Promise.all(files.map((filename) => readFile(filename, 'utf8')));
   for (let index = 0; index < files.length; index += 1) {
+    const localization = language === 'en' && path.basename(files[index]) === 'i18n.js';
+    if (localization) window.MutationObserver = nativeMutationObserver;
     new vm.Script(sources[index], { filename: files[index] }).runInContext(context);
+    if (localization) window.MutationObserver = ObserverStub;
   }
   if (dispatchReady) {
     window.document.dispatchEvent(new window.Event('DOMContentLoaded', { bubbles: true }));

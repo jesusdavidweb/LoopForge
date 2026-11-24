@@ -49,6 +49,7 @@
 .collab-image-thumb:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .collab-image-thumb.is-broken{min-width:120px;min-height:80px;cursor:default}
 .collab-image-thumb.is-broken::after{content:'图片无法加载';position:absolute;inset:0;display:grid;place-items:center;font-size:11px;color:var(--muted);line-height:1.4}
+:lang(en) .collab-image-thumb.is-broken::after{content:'Could not load image'}
 .collab-image-thumb.is-broken img{display:none}
 .collab-file-card{display:inline-flex;align-items:center;gap:10px;max-width:280px;padding:8px 12px 8px 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);text-decoration:none}
 .collab-file-card:hover{background:var(--bg)}
@@ -74,6 +75,7 @@
 @media(hover:none){#collaborationView .collab-attach-remove{opacity:1}}
 #collaborationView .ai-compose-box.is-dragging{border-style:dashed;border-color:var(--blue);background:color-mix(in srgb,var(--blue) 4%,var(--panel))}
 #collaborationView .ai-compose-box.is-dragging::after{content:'松开即可上传图片或文件';position:absolute;inset:0;display:grid;place-items:center;border-radius:inherit;background:color-mix(in srgb,var(--panel) 82%,transparent);color:var(--blue);font-size:13px;font-weight:600;pointer-events:none;z-index:5}
+:lang(en) #collaborationView .ai-compose-box.is-dragging::after{content:'Drop to upload images or files'}
 @keyframes cc-spin{to{transform:rotate(360deg)}}
 
 /* ---------- Draft / action cards ---------- */

@@ -35,10 +35,18 @@ export function elapsedSeconds(startedAt, finishedAt) {
   return Math.floor((end - start) / 1000);
 }
 export function formatElapsed(seconds) {
-  if (seconds < 1) return "不到1秒";
+  const english = globalThis.window?.lfLang?.() === "en";
+  if (seconds < 1) return english ? "Less than 1 second" : "不到1秒";
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const rest = seconds % 60;
+  if (english) {
+    return [
+      hours && `${hours}h`,
+      minutes && `${minutes}m`,
+      (rest || (!hours && !minutes)) && `${rest}s`,
+    ].filter(Boolean).join(" ");
+  }
   return `${hours ? `${hours}小时` : ""}${minutes ? `${minutes}分钟` : ""}${rest || (!hours && !minutes) ? `${rest}秒` : ""}`;
 }
 export const attachmentURL = (attachment, sessionId) =>

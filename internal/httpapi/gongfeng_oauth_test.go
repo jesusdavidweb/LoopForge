@@ -201,6 +201,15 @@ func TestGongfengOAuthEntryPointsThroughAuthMiddleware(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/html") || !strings.Contains(rec.Body.String(), "请先登录") {
 		t.Fatalf("signed-out start = %d %q %s", rec.Code, rec.Header().Get("Content-Type"), rec.Body.String())
 	}
+	body := rec.Body.String()
+	lastScript := -1
+	for _, src := range []string{"/boot.js", "/i18n-en.js", "/i18n.js"} {
+		index := strings.Index(body, `<script src="`+src+`"></script>`)
+		if index <= lastScript {
+			t.Fatalf("missing or out-of-order localization script %s: %s", src, body)
+		}
+		lastScript = index
+	}
 	if rec := get("/api/auth/gongfeng/start", true); rec.Code != http.StatusFound {
 		t.Fatalf("signed-in start = %d %s", rec.Code, rec.Body.String())
 	}

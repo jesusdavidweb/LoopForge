@@ -1,0 +1,86 @@
+# Dokploy source deployment. Select this file explicitly as the Compose path.
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: loopforge
+      MYSQL_USER: loopforge
+      MYSQL_PASSWORD: ${LOOPFORGE_DB_PASSWORD:?Set the existing MySQL password}
+      MYSQL_ROOT_PASSWORD: ${LOOPFORGE_DB_ROOT_PASSWORD:?Set the existing MySQL root password}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u loopforge -D loopforge -e 'SELECT 1' >/dev/null"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks:
+      - loopforge-net
+
+  platform:
+    image: ${LOOPFORGE_BUILD_IMAGE:-loopforge-platform:dokploy}
+    pull_policy: build
+    build:
+      context: .
+      args:
+        LOOPFORGE_BUILD_JOBS: ${LOOPFORGE_BUILD_JOBS:-}
+        CODEBUDDY_PACKAGE: ${CODEBUDDY_PACKAGE-@tencent-ai/codebuddy-code@2.167.0}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      AGENTFLOW_HTTP_PORT: "8080"
+      AGENTFLOW_MYSQL_DSN: "loopforge:${LOOPFORGE_DB_PASSWORD:?Set the existing MySQL password}@tcp(mysql:3306)/loopforge"
+      AGENTFLOW_SESSION_SECRET: ${AGENTFLOW_SESSION_SECRET:?Set the existing session secret}
+      AGENTFLOW_AUTH_REQUIRED: "true"
+      AGENTFLOW_ALLOW_SIGNUP: ${AGENTFLOW_ALLOW_SIGNUP:-true}
+      AGENTFLOW_SECURE_COOKIES: "true"
+      AGENTFLOW_ASSISTANT_SESSION_DIR: /data/assistant
+      AGENTFLOW_CONVERSATION_DIR: ${LOOPFORGE_DATA_DIR:?Set the existing absolute host data directory}/conversations
+      AGENTFLOW_CLARIFY_SESSION_DIR: /data/clarify
+      AGENTFLOW_PLATFORM_MCP_URL: http://platform:8080
+      AGENTFLOW_DOCKER_NETWORK: ${LOOPFORGE_RUNTIME_NETWORK:-loopforge-runtime}
+      AGENTFLOW_ISOLATED_IMAGE: ${LOOPFORGE_BUILD_IMAGE:-loopforge-platform:dokploy}
+      AGENTFLOW_PUBLIC_URL: ${LOOPFORGE_PUBLIC_URL:?Set the public HTTPS URL}
+      AGENTFLOW_PREVIEW_PUBLIC_URL: ${LOOPFORGE_PUBLIC_URL:?Set the public HTTPS URL}
+      AGENTFLOW_RUNNER_BINARY: /app/bin/agentflow-runner-{os}-{arch}
+      AGENTFLOW_GATE_MCP_BINARY: /app/bin/agentflow-gate-mcp-{os}-{arch}
+      AGENTFLOW_RUNTIME_CLI_DIR: ${LOOPFORGE_DATA_DIR}/cli
+      HOME: ${LOOPFORGE_DATA_DIR}/home
+    command: ["-workspaces", "${LOOPFORGE_DATA_DIR}/workspaces"]
+    volumes:
+      - platform-data:/data
+      # Sandboxes use the host Docker daemon to bind these same paths.
+      - type: bind
+        source: ${LOOPFORGE_DATA_DIR}
+        target: ${LOOPFORGE_DATA_DIR}
+        bind:
+          create_host_path: false
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=2).close()"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    networks:
+      - loopforge-net
+
+volumes:
+  # Use the Docker volume names from the existing deployment.
+  mysql-data:
+    external: true
+    name: ${LOOPFORGE_MYSQL_VOLUME:?Set the existing MySQL Docker volume name}
+  platform-data:
+    external: true
+    name: ${LOOPFORGE_PLATFORM_VOLUME:?Set the existing platform Docker volume name}
+
+networks:
+  loopforge-net:
+    name: ${LOOPFORGE_RUNTIME_NETWORK:-loopforge-runtime}
+    driver: bridge

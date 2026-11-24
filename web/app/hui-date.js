@@ -9,7 +9,8 @@
   const doc = typeof document !== 'undefined' ? document : null;
   const supported = !!(doc && typeof doc.createElement === 'function' && typeof MutationObserver === 'function');
   const instances = new WeakMap();
-  const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日'];
+  const english = window.lfLang?.() === 'en';
+  const WEEKDAYS = english ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['一', '二', '三', '四', '五', '六', '日'];
   const PLACEHOLDER = '选择日期';
   let serial = 0;
 
@@ -162,7 +163,7 @@
       value.classList.toggle('is-placeholder', !current);
       trigger.disabled = !!input.disabled || !!input.readOnly;
       trigger.hidden = !!input.hidden || input.style?.display === 'none';
-      trigger.setAttribute('aria-label', label() + (current ? '：' + current : ''));
+      trigger.setAttribute('aria-label', label() + (current ? (english ? ': ' : '：') + current : ''));
       if (open && trigger.disabled) close(false);
       else if (open) render();
     }
@@ -171,7 +172,7 @@
       const now = today();
       const y = view.getFullYear();
       const m = view.getMonth();
-      title.textContent = y + ' 年 ' + (m + 1) + ' 月';
+      title.textContent = english ? new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(view) : y + ' 年 ' + (m + 1) + ' 月';
       const { min, max } = bounds();
       prev.disabled = !!min && new Date(y, m, 0) < min;
       next.disabled = !!max && new Date(y, m + 1, 1) > max;

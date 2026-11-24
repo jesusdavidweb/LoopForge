@@ -608,7 +608,7 @@ export function ArtifactPreview({ artifact }) {
         <div className="artifact-preview-file-row">
           <FileText size={17} />
           <div className="artifact-preview-file-identity">
-            <p className="artifact-preview-file-name" title={artifact.name}>
+            <p className="artifact-preview-file-name" title={artifact.name} data-i18n-data>
               {artifact.name}
             </p>
             {artifact.source ? (

@@ -90,3 +90,25 @@ test('chart lifecycle mounts a concrete chart, routes events, replays, rebuilds,
   app.evaluate(`obsDisposeCharts(document.querySelector('#chart-host'))`);
   assert.equal(app.evaluate(`obsChartCount()`), 0);
 });
+
+test('English chart legends, axes, and tooltips are localized before rendering', async (t) => {
+  const app = await loadApp({ language: 'en' });
+  t.after(app.close);
+  const result = app.evaluate(`(() => {
+    const options = { reduced:true, label: () => '10月' };
+    const trend = obsTrendOption([{tokens:10}], 'comp', '', null, options);
+    const phases = obsPhaseStackOption([{clarification:60000,samples:{clarification:2}}], options);
+    const funnel = obsFunnelOption([{name:'需求',value:10},{name:'交付',value:2}], options);
+    const owner = obsOwnersOption([{name:'研发负责人',delivered:1}], options);
+    return {
+      labels: [...trend.xAxis.data, ...trend.series.map(series => series.name), ...phases.legend.data, ...funnel.yAxis.data],
+      tooltip: trend.tooltip.formatter([{dataIndex:0}]) + phases.tooltip.formatter([{dataIndex:0}]) +
+        funnel.series[0].label.formatter({dataIndex:1}),
+      owner: owner.yAxis.data[0],
+    };
+  })()`);
+  assert.doesNotMatch(result.labels.join(' '), /[\u3400-\u9fff]/);
+  assert.doesNotMatch(result.tooltip, /[\u3400-\u9fff]/);
+  assert.match(result.tooltip, /Largest drop-off/);
+  assert.equal(result.owner, '研发负责人');
+});

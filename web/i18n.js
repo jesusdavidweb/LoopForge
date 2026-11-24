@@ -37,6 +37,7 @@
   function bindLangSwitch() {
     const current = root.dataset.lang === 'en' ? 'en' : 'zh';
     document.querySelectorAll('.lang-switch').forEach(group => {
+      if (current === 'en') group.setAttribute('aria-label', 'Language');
       group.querySelectorAll('[data-lang-value]').forEach(btn => {
         const on = btn.dataset.langValue === current;
         btn.classList.toggle('active', on);
@@ -44,6 +45,11 @@
         btn.tabIndex = on ? 0 : -1;
         if (btn.dataset.langBound) return;
         btn.dataset.langBound = '1';
+        if (current === 'en') {
+          const chinese = btn.dataset.langValue === 'zh';
+          if (chinese) btn.textContent = 'ZH';
+          btn.setAttribute('aria-label', chinese ? 'Chinese' : 'English');
+        }
         btn.addEventListener('click', () => window.lfSetLang(btn.dataset.langValue));
       });
       if (!group.dataset.langKeys) {
@@ -88,13 +94,18 @@
   const dict = window.LF_I18N_EN || {};
   const HAN = /[\u3400-\u9fff\u300c\u300d\uff0c\u3002\uff1a\uff08\uff09\u3001\uff1b\uff01\uff1f]/;
   const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE', 'NOSCRIPT']);
-  const SKIP_SEL = '[data-i18n-skip],.monaco-editor,.xterm,.log-line,.run-log,.markdown-body,[contenteditable="true"]';
-  // User-authored text only gets whole-string dictionary hits, never fragment
-  // rewrites, so a sentence typed by a person is not turned into mixed prose.
-  const DATA_SEL = '[data-i18n-data],.ai-user-bubble,.ai-think-body,.collab-process-body,.collab-list-item,.issue-title-cell b,#issueDetailTitle,.detail-desc,.comment-row p';
-  const ATTRS = ['placeholder', 'title', 'aria-label', 'data-tip', 'data-tooltip'];
+  const SKIP_SEL = '[data-i18n-skip], [data-i18n-data], .monaco-editor, .xterm, .log-line, .run-log, .markdown-body, .markdown, [contenteditable="true"]';
+  const DATA_SEL = '.ai-user-bubble, .user-bubble, .ai-think-body, .collab-process-body, .issue-title-cell b, .detail-desc, .comment-row p';
+  const ATTRS = ['placeholder', 'title', 'aria-label', 'aria-description', 'aria-valuetext', 'alt', 'label', 'data-tip', 'data-tooltip', 'data-hui-title'];
   const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const fragments = Object.keys(dict).filter(k => k.length > 1).sort((a, b) => b.length - a.length);
+  // Numbered slots match a complete UI message and leave inserted values intact.
+  const slot = /\{(\d+)\}/g;
+  const templates = Object.entries(dict).filter(([key]) => /\{\d+\}/.test(key)).map(([key, value]) => {
+    const indices = [...key.matchAll(slot)].map(([, index]) => Number(index));
+    const matcher = new RegExp('^' + key.split(/\{\d+\}/).map(escape).join('([\\s\\S]*?)') + '$');
+    return { matcher, value, indices };
+  });
+  const fragments = Object.keys(dict).filter(k => k.length > 1 && !/\{\d+\}/.test(k)).sort((a, b) => b.length - a.length);
   const fragmentRE = fragments.length ? new RegExp('(?<![\\u3400-\\u9fff])(?:' + fragments.map(escape).join('|') + ')(?![\\u3400-\\u9fff])', 'g') : null;
   const sentences = fragments.filter(k => k.length >= 6 && HAN.test(k));
   const sentenceRE = sentences.length ? new RegExp(sentences.map(escape).join('|'), 'g') : null;
@@ -116,11 +127,10 @@
     }],
   ];
   const cache = new Map();
-
-  function translateExact(text) {
-    const trimmed = text && text.trim();
-    return trimmed && Object.prototype.hasOwnProperty.call(dict, trimmed) ? text.replace(trimmed, dict[trimmed]) : text;
-  }
+  // The observer also sees our writes. An English label may still contain a
+  // Chinese project name or a literal chat command.
+  const translatedNodes = new WeakMap();
+  const translatedAttrs = new WeakMap();
 
   function translate(text) {
     if (!text || !HAN.test(text)) return text;
@@ -129,17 +139,26 @@
     const trimmed = text.trim();
     let out;
     if (Object.prototype.hasOwnProperty.call(dict, trimmed)) {
-      out = text.replace(trimmed, dict[trimmed]);
+      out = text.replace(trimmed, () => dict[trimmed]);
     } else {
-      out = fragmentRE ? text.replace(fragmentRE, m => dict[m]) : text;
-      if (sentenceRE && HAN.test(out)) out = out.replace(sentenceRE, m => dict[m]);
-      for (const [re, rep] of patterns) out = out.replace(re, rep);
-    }
-    if (out !== text) {
-      for (const [re, rep] of punct) out = out.replace(re, rep);
-      out = out.replace(/:\s*:/g, ':').replace(/ {2,}/g, ' ').replace(/ ([,.:;!?)])/g, '$1').replace(/\( /g, '(');
-      if (/^\s/.test(text) === false) out = out.replace(/^\s+/, '');
-      if (/\s$/.test(text) === false) out = out.replace(/\s+$/, '');
+      for (const { matcher, value, indices } of templates) {
+        const match = matcher.exec(trimmed);
+        if (!match) continue;
+        const english = value.replace(slot, (_, index) => match[indices.indexOf(Number(index)) + 1]);
+        out = text.replace(trimmed, () => english);
+        break;
+      }
+      if (out === undefined) {
+        out = fragmentRE ? text.replace(fragmentRE, m => dict[m]) : text;
+        if (sentenceRE && HAN.test(out)) out = out.replace(sentenceRE, m => dict[m]);
+        for (const [re, rep] of patterns) out = out.replace(re, rep);
+        if (out !== text) {
+          for (const [re, rep] of punct) out = out.replace(re, rep);
+          out = out.replace(/:\s*:/g, ':').replace(/ {2,}/g, ' ').replace(/ ([,.:;!?)])/g, '$1').replace(/\( /g, '(');
+          if (!/^\s/.test(text)) out = out.replace(/^\s+/, '');
+          if (!/\s$/.test(text)) out = out.replace(/\s+$/, '');
+        }
+      }
     }
     if (cache.size > 20000) cache.clear();
     cache.set(text, out);
@@ -148,24 +167,35 @@
   window.lfTranslate = translate;
 
   function skipped(el) {
-    return !el || SKIP.has(el.tagName) || (el.closest && el.closest(SKIP_SEL));
+    return !el || SKIP.has(el.tagName) || el.closest?.(SKIP_SEL);
   }
   function translateText(node) {
     const parent = node.parentElement;
-    if (skipped(parent)) return;
-    const next = parent.closest(DATA_SEL) ? translateExact(node.nodeValue) : translate(node.nodeValue);
-    if (next !== node.nodeValue) node.nodeValue = next;
+    if (skipped(parent) || parent.closest(DATA_SEL) || parent.closest('code, pre, textarea')) return;
+    if (translatedNodes.get(node) === node.nodeValue) return;
+    const next = translate(node.nodeValue);
+    if (next === node.nodeValue) return;
+    const option = parent.closest('option:not([value])');
+    if (option) option.setAttribute('value', option.value);
+    translatedNodes.set(node, next);
+    node.nodeValue = next;
   }
   function translateAttrs(el) {
-    if (el.closest && el.closest(SKIP_SEL)) return;
+    if (el.closest?.(SKIP_SEL) || el.closest?.(DATA_SEL) || el.closest?.('code, pre')) return;
     for (const name of ATTRS) {
+      if (name === 'label' && !el.matches('option, optgroup, track')) continue;
       const value = el.getAttribute && el.getAttribute(name);
-      if (value && HAN.test(value)) {
-        const next = el.closest(DATA_SEL) ? translateExact(value) : translate(value);
-        if (next !== value) el.setAttribute(name, next);
+      if (value && HAN.test(value) && translatedAttrs.get(el)?.[name] !== value) {
+        const next = translate(value);
+        if (next !== value) {
+          const attrs = translatedAttrs.get(el) || {};
+          attrs[name] = next;
+          translatedAttrs.set(el, attrs);
+          el.setAttribute(name, next);
+        }
       }
     }
-    if (el.tagName === 'INPUT' && /^(button|submit|reset)$/i.test(el.type) && HAN.test(el.value)) el.value = translate(el.value);
+    if (el.tagName === 'INPUT' && !el.name && /^(button|submit|reset)$/i.test(el.type) && HAN.test(el.value)) el.value = translate(el.value);
   }
   function walk(node) {
     if (node.nodeType === 3) return translateText(node);
@@ -192,7 +222,9 @@
 
   const observer = new MutationObserver(records => {
     for (const r of records) {
-      if (r.type === 'childList') r.addedNodes.forEach(walk);
+      if (r.type === 'childList') r.addedNodes.forEach(node => {
+        if (node.parentNode === r.target) walk(node);
+      });
       else if (r.type === 'characterData') translateText(r.target);
       else if (r.type === 'attributes') translateAttrs(r.target);
     }
@@ -200,9 +232,8 @@
   function start() {
     walk(document.body);
     translateTitle();
+    observer.observe(document.head, {subtree: true, childList: true, characterData: true});
     observer.observe(document.body, {subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS});
-    const title = document.querySelector('title');
-    if (title) new MutationObserver(translateTitle).observe(title, {childList: true, characterData: true, subtree: true});
   }
   if (document.body) start();
   else document.addEventListener('DOMContentLoaded', start, {once: true});

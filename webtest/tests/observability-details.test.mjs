@@ -288,3 +288,38 @@ test('conversation activity cards show counts, collaboration share, periods with
   assert.equal(metric('sessions'),'—');
   assert.doesNotMatch(group().textContent, /NaN|Infinity/);
 });
+
+test('offline HTML and CSV exports use the selected language and keep project data intact', async (t) => {
+  for (const language of ['en', 'zh']) {
+    const app = await loadApp({ language });
+    t.after(app.close);
+    const data = {
+      ...analytics,
+      activity: { sessions: 2, collaborativeSessions: 1 },
+      workflows: [{ ...analytics.workflows[0], name: '发布流程' }],
+      deliveries: [{
+        issueId: 'issue-1', title: '发布流程', source: 'gongfeng', workflowName: 'Delivery',
+        runStatus: 'succeeded', sopSucceeded: true, delivered: true, runCount: 1,
+        mrState: 'merged', mrIid: 7, mrUrl: 'https://example.test/merge_requests/7',
+      }],
+    };
+    app.evaluate(`state.analytics=${JSON.stringify(data)};state.obsScope='project';state.obsTrendGrain='all';`);
+    const report = app.evaluate('buildObsReportHTML()');
+    assert.match(report, /发布流程/);
+    const csv = app.evaluate(`obsCsvContent([{headers:['项目','运行'],rows:[{cells:['发布流程',2]}]}])`);
+    const deliveryCsv = app.evaluate('obsCsvContent(obsDeliveryTableDef(true).tables)');
+    assert.match(csv, /发布流程,2/);
+    if (language === 'en') {
+      assert.match(report, /<html lang="en">/);
+      assert.match(report, /<h1>Usage Report<\/h1>/);
+      assert.doesNotMatch(report.replaceAll('发布流程', ''), /[\u3400-\u9fff]/);
+      assert.match(csv, /^\ufeffProjects,Runs/);
+      assert.doesNotMatch(deliveryCsv.replaceAll('发布流程', ''), /[\u3400-\u9fff]/);
+    } else {
+      assert.match(report, /<html lang="zh-CN">/);
+      assert.match(report, /<h1>用量分析报告<\/h1>/);
+      assert.match(csv, /^\ufeff项目,运行/);
+      assert.match(deliveryCsv, /工蜂/);
+    }
+  }
+});

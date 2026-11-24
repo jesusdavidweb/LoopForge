@@ -49,7 +49,7 @@ export default function QueuedMessages({
               className="queued-message-icon"
               aria-hidden="true"
             />
-            <span className="queued-message-text" title={steering.text}>
+            <span className="queued-message-text" title={steering.text} data-i18n-data={steering.text ? "" : undefined}>
               {steering.text || "图片与文件"}
             </span>
             <span className="queued-message-state">正在引导</span>
@@ -67,7 +67,7 @@ export default function QueuedMessages({
                 className="queued-message-icon"
                 aria-hidden="true"
               />
-              <span className="queued-message-text" title={item.text}>
+              <span className="queued-message-text" title={item.text} data-i18n-data={item.text ? "" : undefined}>
                 {item.text || "图片与文件"}
               </span>
               {extra ? (

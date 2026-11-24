@@ -165,7 +165,9 @@ function renderIssueDetailTab(){
   const issue=data.issue;if(!issue){host.innerHTML='<div class="detail-empty">未找到该需求</div>';renderedIssueClarifyKey='';return}
   const project=(state.data.projects||[]).find(p=>p.id===issue.projectId);
   $('#issueDetailKey').textContent=issueKeyLabel(issue);
-  $('#issueDetailTitle').textContent=issue.title||'';
+  const title=$('#issueDetailTitle');
+  title.setAttribute('data-i18n-data','');
+  title.textContent=issue.title||'';
   $('#issueDetailSubtitle').textContent=`${project?.name||'—'} · ${issuePriorityLabel(issue.priority)} · ${issueStatusText(issue)} · 更新于 ${new Date(issue.updatedAt).toLocaleString()}`;
   // 答案只存在输入框里。问题没变时跳过重绘，避免轮询和运行推送把正在填的内容清掉。
   const clarifyKey=state.issueDetailTab==='clarify'?issueClarifyViewKey(issue,project):'';
