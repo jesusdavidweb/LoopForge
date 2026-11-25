@@ -52,7 +52,7 @@ function renderSharedScheduleMarket(){
   const focusId=action?focused.dataset[action]:null;
   const items=sharedScheduleCatalog.filter(v=>[v.name,v.description,v.sourceProjectName,v.sourceProjectId,...(v.parameters||[]).map(p=>p.label)].join(' ').toLowerCase().includes(sharedScheduleQuery));
   const project=currentProject();
-  $('#sharedScheduleMarketHint').textContent=projectId?`订阅将添加到「${project?.name||projectId}」，参数、调度和通知由本项目独立配置。新版本发布后可手动升级。`:'共享任务可跨项目浏览；请先选择项目，再添加订阅。';
+  $('#sharedScheduleMarketHint').textContent=projectId?`订阅将添加到「${window.lfProjectDisplay?.(project,'name')||project?.name||projectId}」，参数、调度和通知由本项目独立配置。新版本发布后可手动升级。`:'共享任务可跨项目浏览；请先选择项目，再添加订阅。';
   const status=$('#sharedScheduleMarketStatus');
   status.innerHTML=sharedScheduleCatalogError?`<div class="shared-schedule-market-error">读取共享任务失败：${escapeHTML(sharedScheduleCatalogError)} <button type="button" class="button ghost small" data-retry-shared>重试</button></div>`:'';
   status.querySelector('[data-retry-shared]')?.addEventListener('click',()=>refreshSharedScheduleCatalog().catch(()=>{}));

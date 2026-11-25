@@ -330,11 +330,11 @@ function assistantPrefsFormHTML(p){
  const mode=assistantReviewModeOf(p);
  const reviewModel=String(p.approvalReviewModel||'').trim();
  const catalogData=assistantReviewCatalogData();
- const modeOptions=ASSISTANT_REVIEW_MODES.map(m=>`<option value="${m.id}" ${mode===m.id?'selected':''}>${escapeHTML(m.label)}</option>`).join('');
+ const modeOptions=ASSISTANT_REVIEW_MODES.map(m=>`<option value="${m.id}" ${mode===m.id?'selected':''}>${escapeHTML(window.lfMessage?.('assistant.review.'+m.id)??m.label)}</option>`).join('');
  return `<form id="assistantPrefsForm" class="asst-form" novalidate><fieldset ${assistantPrefsUI.saving?'disabled':''}>
   <section class="asst-panel"><header class="asst-panel-head"><h2>消息发送</h2></header>
    <div class="asst-rows"><label class="asst-switch-row" for="assistantPrefsMessageDuringGeneration"><span><b>生成中发送消息</b><small>排队会等当前回复结束；立即发送会打断当前回复，保留已输出内容并继续处理新消息。</small></span>
-    <select id="assistantPrefsMessageDuringGeneration" class="input" name="messageDuringGeneration"><option value="queue" ${p.steerOnSend?'':'selected'}>排队</option><option value="steer" ${p.steerOnSend?'selected':''}>立即发送</option></select>
+    <select id="assistantPrefsMessageDuringGeneration" class="input" name="messageDuringGeneration"><option value="queue" ${p.steerOnSend?'':'selected'}>${escapeHTML(window.lfMessage?.('assistant.delivery.queue')??'排队')}</option><option value="steer" ${p.steerOnSend?'selected':''}>${escapeHTML(window.lfMessage?.('assistant.delivery.steer')??'立即发送')}</option></select>
    </label></div></section>
   <section class="asst-panel"><header class="asst-panel-head"><h2>主动派发</h2><p>打开后 AI 助手会更主动地把事情交给角色或 SOP。派角色不需要确认；走 SOP 在「请求批准」下先征求同意，「帮我批准」下由 AI 审查直接裁决，「完全权限」下直接启动。</p></header>
    <div class="asst-rows">

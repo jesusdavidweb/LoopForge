@@ -1418,10 +1418,10 @@ function obsDelivery(){
   const summary=state.analytics?.summary||{};
   const kpis=obsKpiGroups([
     obsKpiGroup('交付结果',[
-      {label:'已交付',value:String(d.delivered||0),meter:d.issues?d.delivered*100/d.issues:0,foot:`SOP 成功或对话直接交付，且已在默认分支 · ${d.issues||0} 个有执行的单${d.directIssues?`（含 ${d.directIssues} 个只在对话里改）`:''}`,tip:['「已合入 / 已交付」只统计默认分支。','对话直接改代码的需求没有 SOP，PR 合入默认分支即算交付。']},
+      {label:'已交付',value:String(d.delivered||0),meter:d.issues?d.delivered*100/d.issues:0,foot:window.lfMessage('delivery.completed',{total:d.issues||0})+(d.directIssues?window.lfMessage('delivery.directOnly',{count:d.directIssues}):''),tip:['「已合入 / 已交付」只统计默认分支。','对话直接改代码的需求没有 SOP，PR 合入默认分支即算交付。']},
       {label:'执行过的需求 / Bug',value:`${d.requirementCount||0} / ${d.bugFixCount||0}`,foot:'按 SOP 统计标签归类，需求去重'},
-      {label:'PR 已合入',value:String(d.mrMerged||0),meter:(d.totalMrs??d.withMr)?d.mrMerged*100/(d.totalMrs??d.withMr):0,foot:`按 PR 计数 · 默认分支；${d.mrIntegrated||0} 个已合入基线`},
-      ...(projectScope?[{label:'人均周吞吐',value:summary.weeklyActiveContributors?Number(summary.weeklyThroughputPerUser||0).toFixed(2):'—',foot:`近 7 天 ${summary.weeklyDeliveredIssues||0} 个交付 / ${summary.weeklyActiveContributors||0} 人`}]:[]),
+      {label:'PR 已合入',value:String(d.mrMerged||0),meter:(d.totalMrs??d.withMr)?d.mrMerged*100/(d.totalMrs??d.withMr):0,foot:window.lfMessage('delivery.merged',{count:d.mrIntegrated||0})},
+      ...(projectScope?[{label:'人均周吞吐',value:summary.weeklyActiveContributors?Number(summary.weeklyThroughputPerUser||0).toFixed(2):'—',foot:window.lfMessage('delivery.weekly',{delivered:summary.weeklyDeliveredIssues||0,people:summary.weeklyActiveContributors||0})}]:[]),
     ]),
     obsKpiGroup('耗时与返工',[
       {label:'平均执行耗时',value:d.averageExecutionDurationMs?duration(d.averageExecutionDurationMs):'—',foot:`P50 ${d.p50ExecutionDurationMs?duration(d.p50ExecutionDurationMs):'—'} · P95 ${d.p95ExecutionDurationMs?duration(d.p95ExecutionDurationMs):'—'}`,tip:['执行耗时 = 该需求全部执行按 SOP 节点求和。']},
@@ -1504,7 +1504,7 @@ function obsDeliveriesCard(){
   const def=obsDeliveryTableDef();
   const {items,filter}=def;
   const userFilter=filter.startsWith('user:')?filter:'';
-  const chips=OBS_DELIVERY_FILTERS.map(([id,label])=>`<button type="button" data-obs-delivery="${id}" class="${filter===id?'active':''}">${label}<i>${items.filter(it=>obsDeliveryMatches(it,id)).length} 单</i></button>`).join('')+(userFilter?`<button type="button" class="active" data-obs-delivery="all" title="清除负责人筛选">${escapeHTML(obsUserName(userFilter.slice(5)))} ×</button>`:'');
+  const chips=OBS_DELIVERY_FILTERS.map(([id,label])=>`<button type="button" data-obs-delivery="${id}" class="${filter===id?'active':''}">${label}<i>${window.lfMessage('delivery.count',{count:items.filter(it=>obsDeliveryMatches(it,id)).length})}</i></button>`).join('')+(userFilter?`<button type="button" class="active" data-obs-delivery="all" title="清除负责人筛选">${escapeHTML(obsUserName(userFilter.slice(5)))} ×</button>`:'');
   const body=`<div class="obs-chips">${chips}</div>${obsDetailTable(def.tables[0],'','')}`;
   return obsCard('deliveries','需求交付明细','耗时为该需求最近一次执行的端到端时间；执行耗时 = 该需求全部执行按 SOP 节点求和；周期为首次执行到最后一次执行。「已合入 / 已交付」只统计默认分支。',`<button type="button" class="obs-btn" data-obs-export-csv="deliveries">${obsIcon('download')}CSV</button>`,body,{klass:'obs-deliveries'});
 }

@@ -2396,9 +2396,9 @@ const THEME_SEGMENT_OPTIONS = [['light', 'sun', '浅色'], ['dark', 'moon', '深
 function themeSegmentHTML() {
   return `
       <div class="upp-theme">
-        <span class="upp-label" id="uppThemeLabel">外观</span>
+        <span class="upp-label" id="uppThemeLabel">${escapeHTML(window.lfMessage?.('appearance.label')??'外观')}</span>
         <div class="upp-theme-seg" role="radiogroup" aria-labelledby="uppThemeLabel">
-          ${THEME_SEGMENT_OPTIONS.map(([value, icon, label]) => `<button type="button" role="radio" data-theme-pref="${value}" aria-checked="false" tabindex="-1"><svg class="agent-icon harness-icon" data-icon="${icon}" width="14" height="14" aria-hidden="true" focusable="false"></svg>${label}</button>`).join('')}
+          ${THEME_SEGMENT_OPTIONS.map(([value, icon, label]) => `<button type="button" role="radio" data-theme-pref="${value}" aria-checked="false" tabindex="-1"><svg class="agent-icon harness-icon" data-icon="${icon}" width="14" height="14" aria-hidden="true" focusable="false"></svg>${escapeHTML(window.lfMessage?.('appearance.'+value)??label)}</button>`).join('')}
         </div>
       </div>`;
 }

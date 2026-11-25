@@ -89,6 +89,37 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startLangMotion, { once: true });
   else startLangMotion();
 
+  const messages = window.LF_MESSAGES || {};
+  window.lfMessage = (key, params = {}) => {
+    const message = messages[key];
+    if (!message) return key;
+    const locale = lang === 'en' ? 'en' : 'zh-CN';
+    return message[lang === 'en' ? 1 : 0].replace(/\{(\w+)\}/g, (slot, name) => {
+      const value = params[name];
+      return typeof value === 'number' ? value.toLocaleString(locale) : value ?? slot;
+    });
+  };
+  window.lfWorkflowName = workflow => {
+    const value = workflow?.name || '';
+    const key = `demo.workflow.${workflow?.id}`;
+    return messages[key]?.[0] === value ? window.lfMessage(key) : value;
+  };
+  window.lfProjectDisplay = (project, field) => {
+    const value = project?.[field] || '';
+    if (project?.id !== 'welcome' || (field !== 'name' && field !== 'description')) return value;
+    const key = `demo.project.${field}`;
+    return messages[key]?.[0] === value ? window.lfMessage(key) : value;
+  };
+  const localizeStaticMessages = () => {
+    document.querySelectorAll('[data-lf-text]').forEach(element => {
+      element.textContent = window.lfMessage(element.dataset.lfText);
+    });
+    const version = document.querySelector('.loopforge-build[data-build-hash]');
+    if (version) version.title = window.lfMessage('build.imageVersion', {hash:version.dataset.buildHash});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', localizeStaticMessages, {once:true});
+  else localizeStaticMessages();
+
   if (lang !== 'en') return;
 
   const dict = window.LF_I18N_EN || {};

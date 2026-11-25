@@ -1,14 +1,14 @@
 function renderProjectSwitcher(){
   const projects=state.data.projects||[];
   const switcher=$('#projectSwitcher');if(!switcher)return;
-  switcher.innerHTML=projects.map(p=>`<option value="${escapeHTML(p.id)}" ${p.id===state.projectFilter?'selected':''}>${escapeHTML(p.key||'PROJECT')} · ${escapeHTML(p.name)}</option>`).join('')||'<option value="">暂无项目</option>';
+  switcher.innerHTML=projects.map(p=>`<option value="${escapeHTML(p.id)}" ${p.id===state.projectFilter?'selected':''}>${escapeHTML(p.key||'PROJECT')} · ${escapeHTML(window.lfProjectDisplay?.(p,'name')??p.name)}</option>`).join('')||'<option value="">暂无项目</option>';
   window.enhanceSelect?.(switcher);
   if(!projects.some(p=>p.id===state.projectFilter))state.projectFilter=defaultProjectId(projects,state.currentUser?.id);
 }
 function renderProjectContext(projectIssues){
   const projects=state.data.projects||[],project=projects.find(p=>p.id===state.projectFilter);renderProjectSwitcher();
   $('#projectContextMark').textContent=(project?.key||project?.name||'P').slice(0,2).toUpperCase();$('#projectContextMark').style.background=safeColor(project?.color);
-  $('#projectContextName').textContent=project?.name||'暂无项目';$('#projectContextDescription').textContent=project?.description||'工作台数据会按项目整体切换';
+  $('#projectContextName').textContent=(window.lfProjectDisplay?.(project,'name')??project?.name)||'暂无项目';$('#projectContextDescription').textContent=(window.lfProjectDisplay?.(project,'description')??project?.description)||'工作台数据会按项目整体切换';
   const active=projectIssues.filter(i=>issueRunHealth(i)==='active').length,attention=projectIssues.filter(i=>issueRunHealth(i)==='attention').length,pendingMRs=projectIssues.reduce((n,i)=>n+pendingDeliveryMRCount(i),0),repo=(state.data.repositories||[]).find(r=>r.id===project?.defaultRepositoryId);
   const repoCount=(state.data.repositories||[]).filter(r=>r.projectId===project?.id).length;
   $('#projectContextMetrics').innerHTML=`<button type="button" data-issue-filter="" class="${!state.issueRunFilter?'on':''}"><span>工作项</span><b>${projectIssues.length}</b></button><button type="button" data-issue-filter="active" class="${state.issueRunFilter==='active'?'on':''}"><span>正在推进</span><b>${active}</b></button><button type="button" data-issue-filter="attention" class="${attention?'danger':''} ${state.issueRunFilter==='attention'?'on':''}" title="点此只看待确认澄清结论、门禁失败、运行失败或已中断的工作项"><span>需要介入</span><b>${attention}</b></button><button type="button" data-issue-filter="mr" class="${state.issueRunFilter==='mr'?'on':''}" title="已提 MR 但还没合入的 MR 数（按 MR 计，点击只看涉及的需求）"><span>待处理 MR</span><b>${pendingMRs}</b></button><div class="project-default-sop"><span>代码仓库（${repoCount}）</span><b title="${escapeHTML(repo?.gongfengProjectId||'未绑定')}">默认：${escapeHTML(repo?.name||'未绑定')}</b></div>`;
@@ -119,6 +119,8 @@ function projectWorkflowName(id){const w=(state.data?.workflows||[]).find(x=>x.i
 function projectCardHTML(p,ctx={}){
   const repos=(ctx.repos||[]).filter(r=>r.projectId===p.id),issues=(ctx.issues||[]).filter(i=>i.projectId===p.id);
   const active=issues.filter(i=>issueRunHealth(i)==='active').length,people=projectPeopleIds(p),def=repos.find(r=>r.id===p.defaultRepositoryId);
+  const displayName=window.lfProjectDisplay?.(p,'name')||p.name||p.id;
+  const displayDescription=window.lfProjectDisplay?.(p,'description')??p.description;
   const key=String(p.key||p.name||'P');
   const repoFact=repos.length
     ?`<span class="pa-fact" title="${def?'默认仓库':'已绑定仓库，未设默认'}">${paIcon('repo',12)}<span>${escapeHTML((def||repos[0]).name||'仓库')}${repos.length>1?` +${repos.length-1}`:''}</span></span>`
@@ -126,9 +128,9 @@ function projectCardHTML(p,ctx={}){
   const sop=ctx.workflowName?ctx.workflowName(p.workflowId):'';
   const join=projectJoinCardHTML(p);
   const avatars=people.slice(0,3).map(id=>{const u=userById(id);return `<span class="pa-av" title="${escapeHTML(u?userDisplay(u):String(id))}">${userAvatarHTML(u||id,48)}</span>`}).join('')+(people.length>3?`<span class="pa-av more">+${people.length-3}</span>`:'');
-  return `<article class="pa-card" tabindex="0" role="link" data-project-open="${escapeHTML(p.id)}" aria-label="打开项目 ${escapeHTML(p.name||p.id)}">
-    <div class="pa-card-top"><span class="pa-mark" style="background:${safeColor(p.color)}">${escapeHTML(key.slice(0,2).toUpperCase())}</span><div class="pa-card-m"><h3><span title="${escapeHTML(p.name||'')}">${escapeHTML(p.name||p.id)}</span>${p.id===ctx.currentId?'<span class="pa-chip cur">当前</span>':''}</h3><div class="pa-card-sub" title="${escapeHTML(p.id)} · ${escapeHTML(p.key||'')}">${escapeHTML(p.id)} · ${escapeHTML(p.key||'—')}</div></div><span class="pa-go">${paIcon('arrow',16)}</span></div>
-    <p class="pa-card-desc${p.description?'':' none'}">${escapeHTML(p.description||'暂无项目说明')}</p>
+  return `<article class="pa-card" tabindex="0" role="link" data-project-open="${escapeHTML(p.id)}" aria-label="${escapeHTML(window.lfMessage?.('project.open',{name:displayName})||'打开项目 '+displayName)}">
+    <div class="pa-card-top"><span class="pa-mark" style="background:${safeColor(p.color)}">${escapeHTML(key.slice(0,2).toUpperCase())}</span><div class="pa-card-m"><h3><span data-i18n-data title="${escapeHTML(displayName)}">${escapeHTML(displayName)}</span>${p.id===ctx.currentId?'<span class="pa-chip cur">当前</span>':''}</h3><div class="pa-card-sub" title="${escapeHTML(p.id)} · ${escapeHTML(p.key||'')}">${escapeHTML(p.id)} · ${escapeHTML(p.key||'—')}</div></div><span class="pa-go">${paIcon('arrow',16)}</span></div>
+    <p class="pa-card-desc${p.description?'':' none'}">${displayDescription?`<span data-i18n-data>${escapeHTML(displayDescription)}</span>`:'暂无项目说明'}</p>
     <div class="pa-facts">${repoFact}${sop?`<span class="pa-fact" title="默认 SOP">${paIcon('flow',12)}<span>${escapeHTML(sop)}</span></span>`:''}${p.tapdWorkspaceId?`<span class="pa-fact" title="TAPD Workspace ${escapeHTML(p.tapdWorkspaceId)}">${paIcon('tapd',12)}<span>TAPD</span></span>`:''}${join.fact}</div>
     <div class="pa-card-foot"><div class="pa-avs">${avatars}</div><div class="pa-stats"><span><b>${issues.length}</b> 需求</span>${active?`<span class="pa-live"><i></i><b>${active}</b> 推进中</span>`:''}</div>${join.action}</div>
   </article>`;
@@ -211,12 +213,12 @@ function projectAdminFormHTML(d,ctx){
 }
 function renderProjectAdminHead(){
   const d=state.projectDraft||{},creating=state.projectAdminDetailId==='new',saved=(state.data.projects||[]).find(p=>p.id===state.projectAdminDetailId);
-  const name=String(d.name||'').trim()||(creating?'新项目':saved?.name||''),key=String(d.key||'').trim().toUpperCase();
+  const name=String(window.lfProjectDisplay?.({...d,id:saved?.id},'name')??d.name??'').trim()||(creating?'新项目':saved?.name||''),key=String(d.key||'').trim().toUpperCase();
   const crumb=$('#projectAdminCrumb');if(crumb){crumb.toggleAttribute('data-i18n-data',!creating);crumb.textContent=creating?'新建项目':name;crumb.title=crumb.textContent}
   const head=$('#projectAdminHead');if(!head)return;
   const issues=(state.data.issues||[]).filter(i=>!creating&&i.projectId===state.projectAdminDetailId),active=issues.filter(i=>issueRunHealth(i)==='active').length,sop=projectWorkflowName(d.workflowId);
   const people=projectPeopleIds(d).length;
-  head.innerHTML=`<span class="pa-mark lg" style="background:${safeColor(d.color)}">${escapeHTML((key||(creating?'NEW':name)||'P').slice(0,2).toUpperCase())}</span><div class="pa-dhd-m"><h1><span${creating&&!d.name?'':' data-i18n-data'} title="${escapeHTML(name)}">${escapeHTML(name)}</span>${key?`<span class="pa-chip">${escapeHTML(key)}</span>`:''}${!creating&&saved?.id===state.projectFilter?'<span class="pa-chip cur">当前工作台项目</span>':''}</h1><p${creating?'':' data-i18n-data'}>${escapeHTML(creating?'填写项目名称并创建，之后即可绑定代码仓库、邀请成员。':(d.description||''))}</p>${creating?'':`<div class="pa-dmeta"><span>${paIcon('user',12)}<b>${people}</b> ${lfT('位成员',people===1?'member':'members')}</span><span><b>${issues.length}</b> ${lfT('个需求',issues.length===1?'requirement':'requirements')}</span><span><b>${active}</b> ${lfT('个推进中','in progress')}</span>${sop?`<span>${paIcon('flow',12)}${escapeHTML(sop)}</span>`:''}</div>`}</div>`;
+  head.innerHTML=`<span class="pa-mark lg" style="background:${safeColor(d.color)}">${escapeHTML((key||(creating?'NEW':name)||'P').slice(0,2).toUpperCase())}</span><div class="pa-dhd-m"><h1><span${creating&&!d.name?'':' data-i18n-data'} title="${escapeHTML(name)}">${escapeHTML(name)}</span>${key?`<span class="pa-chip">${escapeHTML(key)}</span>`:''}${!creating&&saved?.id===state.projectFilter?'<span class="pa-chip cur">当前工作台项目</span>':''}</h1><p${creating?'':' data-i18n-data'}>${escapeHTML(creating?'填写项目名称并创建，之后即可绑定代码仓库、邀请成员。':(window.lfProjectDisplay?.({...d,id:saved?.id},'description')??d.description??''))}</p>${creating?'':`<div class="pa-dmeta"><span>${paIcon('user',12)}<b>${people}</b> ${lfT('位成员',people===1?'member':'members')}</span><span><b>${issues.length}</b> ${lfT('个需求',issues.length===1?'requirement':'requirements')}</span><span><b>${active}</b> ${lfT('个推进中','in progress')}</span>${sop?`<span>${paIcon('flow',12)}${escapeHTML(sop)}</span>`:''}</div>`}</div>`;
 }
 function syncProjectAdminTabs(){
   const bar=$('#projectAdminTabs');if(!bar)return;
@@ -682,7 +684,7 @@ function buildProjectPayload(base,fields={}){
 }
 // Returns {field,message} for the first problem, or null. field is '' when no input is to blame.
 function validateProjectPayload(value,{creating,projects=[],workflows=[],saved}={}){
-  if(!value.name)return {field:'name',message:'项目名称不能为空'};
+  if(!value.name)return {field:'name',message:window.lfMessage?.('project.validation.nameRequired')??'项目名称不能为空'};
   if(!value.id)return {field:'id',message:'项目标识不能为空'};
   if(!value.key)return {field:'key',message:'项目 Key 不能为空'};
   if(creating&&(value.id.toLowerCase()==='new'||projects.some(p=>String(p.id).toLowerCase()===value.id.toLowerCase())))return {field:'id',message:`项目标识「${value.id}」已被占用，请换一个`};

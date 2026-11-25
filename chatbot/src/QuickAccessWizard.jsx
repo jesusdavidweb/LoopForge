@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import "../../web/app/git-ssh.js";
+import "../../web/i18n-en.js";
 import HarnessIcon from "./HarnessIcon";
 import SlidingTabs from "./SlidingTabs";
 import { api, canChatInProject, canManageProjectRepos, write } from "./api";
@@ -28,26 +29,28 @@ export function sharedModelNames(models, fallback = "") {
     .join("、");
 }
 
+const stepMessage = key => window.lfMessage?.(key) ?? window.LF_MESSAGES[key][0];
+
 const STEPS = [
   {
     id: "auth",
-    title: "凭据与授权",
-    desc: "仓库访问与执行器",
+    get title() { return stepMessage("quickAccess.auth.title"); },
+    get desc() { return stepMessage("quickAccess.auth.description"); },
   },
   {
     id: "project",
-    title: "项目与仓库",
-    desc: "选择或新建项目，绑定 Git 仓库",
+    get title() { return stepMessage("quickAccess.project.title"); },
+    get desc() { return stepMessage("quickAccess.project.description"); },
   },
   {
     id: "workflow",
-    title: "默认角色与 SOP",
-    desc: "使用平台默认角色与通用交付流程",
+    get title() { return stepMessage("quickAccess.workflow.title"); },
+    get desc() { return stepMessage("quickAccess.workflow.description"); },
   },
   {
     id: "done",
-    title: "完成",
-    desc: "保存配置，直接开始使用",
+    get title() { return stepMessage("quickAccess.done.title"); },
+    get desc() { return stepMessage("quickAccess.done.description"); },
   },
 ];
 

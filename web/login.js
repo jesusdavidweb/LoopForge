@@ -5,21 +5,21 @@ document.getElementById('loginTheme').onclick = () => {
 };
 
 const $ = id => document.getElementById(id);
-const t = window.lfT || ((zh) => zh);
+const t = window.lfMessage;
 let mode = 'login', signup = false;
 
 function render() {
   const creating = mode !== 'login';
-  $('loginSubtitle').textContent = mode === 'setup' ? t('创建管理员账号', 'Create the administrator account') : creating ? t('创建你的账号', 'Create your account') : t('登录你的交付工作台', 'Sign in to your delivery workspace');
+  $('loginSubtitle').textContent = mode === 'setup' ? t('auth.setupSubtitle') : creating ? t('auth.signUpSubtitle') : t('auth.signInSubtitle');
   $('setupNotice').hidden = mode !== 'setup';
   $('confirmField').hidden = !creating;
   $('passwordRule').hidden = !creating;
   $('loginForm').elements.confirm.required = creating;
   $('loginForm').elements.password.autocomplete = creating ? 'new-password' : 'current-password';
-  $('loginSubmit').textContent = mode === 'setup' ? t('创建并进入', 'Create and continue') : creating ? t('注册并进入', 'Sign up') : t('登录', 'Sign in');
+  $('loginSubmit').textContent = mode === 'setup' ? t('auth.createAndContinue') : creating ? t('auth.registerAndContinue') : t('auth.signIn');
   $('loginSwitch').hidden = mode === 'setup' || !signup;
-  $('switchText').textContent = creating ? t('已有账号？', 'Already have an account?') : t('还没有账号？', 'No account yet?');
-  $('switchMode').textContent = creating ? t('登录', 'Sign in') : t('注册', 'Sign up');
+  $('switchText').textContent = creating ? t('auth.existingAccount') : t('auth.noAccount');
+  $('switchMode').textContent = creating ? t('auth.signIn') : t('auth.signUp');
   $('loginContact').hidden = mode === 'setup' || signup;
   $('loginError').textContent = '';
 }
@@ -45,7 +45,7 @@ $('loginForm').onsubmit = async event => {
   const form = event.currentTarget, button = $('loginSubmit'), error = $('loginError');
   const creating = mode !== 'login';
   if (creating && form.elements.password.value !== form.elements.confirm.value) {
-    error.textContent = t('两次输入的密码不一致', 'Passwords do not match');
+    error.textContent = t('auth.passwordMismatch');
     return;
   }
   button.disabled = true;
@@ -56,7 +56,7 @@ $('loginForm').onsubmit = async event => {
       body: JSON.stringify({login: form.elements.login.value.trim(), password: form.elements.password.value}),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || t('操作失败', 'Request failed'));
+    if (!response.ok) throw new Error(payload.error || t('auth.requestFailed'));
     location.replace('/');
   } catch (err) { error.textContent = err.message; button.disabled = false; }
 };

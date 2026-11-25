@@ -22,7 +22,7 @@ async function loadProjectCredentialsPage() {
   const projectID = state.projectFilter;
   const stamp = ++projectCredentialsRequest;
   const project = (state.data?.projects || []).find(item => item.id === projectID);
-  $('#projectCredentialsProject').textContent = project?.name || '';
+  $('#projectCredentialsProject').textContent = window.lfProjectDisplay(project, 'name');
   const create = $('#newProjectCredential');
   create.hidden = true;
   host.textContent = projectID ? '正在加载项目凭据…' : '请先选择项目。';

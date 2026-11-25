@@ -92,7 +92,8 @@ func injectBuildCommit(html string) string {
 	// Inline style: login and vscode pages do not share the workbench stylesheet.
 	// The CSP allows style-src 'unsafe-inline' and forbids inline scripts.
 	label := fmt.Sprintf(
-		`<style>.loopforge-build{position:fixed;right:12px;bottom:8px;z-index:35;margin:0;font:11px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em;color:#7c7c82;user-select:text}</style><span class="loopforge-build" title="%s">%s</span></body>`,
+		`<style>.loopforge-build{position:fixed;right:12px;bottom:8px;z-index:35;margin:0;font:11px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.02em;color:#7c7c82;user-select:text}</style><span class="loopforge-build" data-build-hash="%s" title="%s">%s</span></body>`,
+		htmlpkg.EscapeString(full),
 		htmlpkg.EscapeString("镜像版本 "+full),
 		htmlpkg.EscapeString(short),
 	)

@@ -187,7 +187,11 @@ function renderMCPManagement(){
   const matchedInstalled=installed.filter(item=>mcpMatchesQuery(item,query));
   const installedCount=$('#mcpInstalledCount');
   if(installedCount)installedCount.textContent=String(matchedInstalled.length);
-  hint.innerHTML=personal?`<b>个人 MCP</b><span>仅 ${escapeHTML(userDisplay(state.currentUser)||'当前用户')} 可见。</span>`:`<b>项目 MCP</b><span>添加到「${escapeHTML(project?.name||'未选择项目')}」，不会出现在其他项目中。</span>`;
+  const projectName=window.lfProjectDisplay?.(project,'name')??project?.name;
+  const projectHint=projectName
+    ?window.lfMessage?.('mcp.projectVisibility',{project:projectName})??`添加到「${projectName}」，不会出现在其他项目中。`
+    :window.lfMessage?.('mcp.noProject')??'选择项目后可添加仅供该项目使用的 MCP。';
+  hint.innerHTML=personal?`<b>个人 MCP</b><span>仅 ${escapeHTML(userDisplay(state.currentUser)||'当前用户')} 可见。</span>`:`<b>项目 MCP</b><span data-i18n-data>${escapeHTML(projectHint)}</span>`;
   if(personal&&(!state.currentUser||state.currentUser.isGuest)){grid.innerHTML='<div class="mcp-market-empty"><b>登录后才能管理个人 MCP</b><p>项目级 MCP 仍可在当前项目中管理。</p></div>';return}
   const pagedMCP=paginateList('mcp',matchedInstalled);
   const catalog=personal?'':mcpCatalogSuggestionsHTML(installed,query);
