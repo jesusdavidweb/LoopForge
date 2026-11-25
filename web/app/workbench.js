@@ -388,9 +388,9 @@ async function probeCredentialCatalog(row,catalog,button,connectOnly=false){
   if(extraError){toast(extraError,'err');extra.focus();return}
   const token=(catalog.probeToken||0)+1;catalog.probeToken=token;catalog.probe=null;
   panel.hidden=false;
-  panel.innerHTML=`<p class="credential-vline is-info" role="status">${credentialSpinner(13)}${connectOnly?'正在测试连接…':'正在获取可用模型…'}</p>`;
+  panel.innerHTML=`<p class="credential-vline is-info" role="status">${credentialSpinner(13)}${connectOnly?lfT('正在测试连接…','Testing connection…'):'正在获取可用模型…'}</p>`;
   hydrateCredentialIcons(panel);
-  setCredentialButtonBusy(button,connectOnly?'测试中':'获取中');
+  setCredentialButtonBusy(button,connectOnly?lfT('测试中','Testing…'):lfT('获取中','Fetching…'));
   const started=performance.now();
   let result;
   try{
@@ -403,9 +403,12 @@ async function probeCredentialCatalog(row,catalog,button,connectOnly=false){
   if(catalog.probeToken!==token||!catalog.isConnected)return;
   if(connectOnly){
     const tone=result?.connected?'ok':result?.error?'err':'warn';
+    const unverified=result?.source==='builtin'
+      ?lfT('当前显示内置模型。要测试 API 连接，请先在个人配置中添加 API Key。','Showing built-in models. Add an API key in Personal settings to test the API connection.')
+      :lfT('此执行器可读取模型目录，但尚未验证模型推理。请发起一次对话来验证。','The model catalog is available. Start a conversation to verify that the model can respond.');
     const detail=result?.connected
       ?`${lfT('连接成功','Connected')} · ${Math.round(performance.now()-started)} ms${result.error?` · ${result.error}`:''}`
-      :result?.error||'此执行器可读取模型目录，请发起一次对话验证模型服务。';
+      :result?.error||unverified;
     panel.innerHTML=`<div class="credential-catalog-probe-fail"><p class="credential-vline is-${tone}" role="status">${escapeHTML(detail)}</p><button type="button" class="credential-btn ghost credential-ink" data-catalog-act="probe-close">关闭</button></div>`;
     return;
   }

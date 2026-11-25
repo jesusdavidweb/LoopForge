@@ -140,6 +140,7 @@ test('localized desktop and mobile surfaces use English after changing the langu
     runtimes:[
       {provider:'claude-code', status:'online', authMode:'local', version:'1.0'},
       {provider:'claude-code', status:'online', authMode:'personal', version:'1.0'},
+      {provider:'codex', status:'online', authMode:'personal', version:'1.0'},
     ],
   };
   let runnerAuth = 'local';
@@ -168,6 +169,41 @@ test('localized desktop and mobile surfaces use English after changing the langu
     await expect.poll(() => unlocalized(runnerDialog)).toEqual([]);
     await page.locator('#confirmCancelBtn').click();
   }
+
+  await page.route('**/api/runners/runtimes/test', route => route.fulfill({
+    status:400, json:{
+      code:'runner_api_key_required',
+      error:'请先在个人配置中配置 Claude Code API Key 后再使用 Claude Code 模型',
+    },
+  }));
+  await page.locator('[data-runner-runtime-menu="localization-runner|claude-code"]').click();
+  await page.locator('.runner-runtime-menu').getByRole('menuitem', {name:'Testing',exact:true}).click();
+  await expect(page.getByText('Claude Code: Add an API key in Personal settings, or use Account sign-in on this runner if the CLI supports it.', {exact:true})).toBeVisible();
+
+  await page.route('**/api/users/*/cli-models/probe', route => route.fulfill({
+    json:{source:'builtin',models:[{id:'demo-model',name:'Demo model'}]},
+  }));
+  await page.locator('[data-runner-runtime-menu="localization-runner|codex"]').click();
+  await page.locator('.runner-runtime-menu').getByRole('menuitem', {name:'Model list',exact:true}).click();
+  await runnerDialog.getByRole('button', {name:'Test connection',exact:true}).click();
+  await expect(runnerDialog.getByText('Showing built-in models. Add an API key in Personal settings to test the API connection.', {exact:true})).toBeVisible();
+  await page.locator('#confirmCancelBtn').click();
+
+  let finishUpdateCheck;
+  const updateResponse = new Promise(resolve => { finishUpdateCheck = resolve; });
+  await page.route('**/api/runners/localization-runner/maintenance', async route => {
+    await updateResponse;
+    await route.fulfill({json:{status:'current',current:'1.0'}});
+  });
+  const update = page.locator('[data-runner-check-update=localization-runner]');
+  await update.click();
+  try {
+    await expect(update).toHaveText('Checking for updates…');
+    await expect(update).toHaveAttribute('aria-disabled', 'true');
+  } finally {
+    finishUpdateCheck();
+  }
+  await expect(update).toHaveText('Check for updates');
 
   await page.goto('/#/sandboxes/new');
   const sandboxForm = page.locator('#assetForm');

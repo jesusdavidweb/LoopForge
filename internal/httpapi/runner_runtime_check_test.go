@@ -82,3 +82,27 @@ func TestRunnerCLITestUsesOwnerLoginAndCleansUp(t *testing.T) {
 		t.Fatalf("probe failed: %d %s", rec.Code, rec.Body)
 	}
 }
+
+func TestRunnerCLITestReturnsCodeWhenAPIKeyIsMissing(t *testing.T) {
+	h, owner := workbenchFixture(t)
+	runner := domain.Runner{ID: "test-laptop", OwnerUserID: owner.ID, Status: domain.RunnerStatusOnline,
+		RunnerVersion: domain.RunnerVersionCLISettings, Runtimes: []domain.RunnerRuntime{{Provider: "claude-code", AuthMode: "personal"}}}
+	if err := h.repo.PutRunner(runner); err != nil {
+		t.Fatal(err)
+	}
+	runners := &runnersHandlers{deps: h.deps, assistant: h}
+	body := bytes.NewBufferString(`{"runnerId":"test-laptop","provider":"claude-code"}`)
+	c, rec := workbenchContext(owner, http.MethodPost, "/api/runners/runtimes/test", body)
+	runners.runnerRuntimeTest(c)
+
+	var response struct {
+		Code  string `json:"code"`
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusBadRequest || response.Code != "runner_api_key_required" || response.Error == "" {
+		t.Fatalf("unexpected error response: %d %s", rec.Code, rec.Body)
+	}
+}

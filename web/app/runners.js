@@ -181,7 +181,7 @@ function renderRunnersView(){
           <div class="runner-card-name"><b title="${escapeHTML(r.name||r.id)}">${escapeHTML(r.name||r.id)}</b>${isDefault?'<span class="runner-tag default">默认</span>':''}${shared?'<span class="runner-tag">共享</span>':''}</div>
           <small>${escapeHTML(osLabel)} · ${escapeHTML(r.arch||'?')} · Runner ${escapeHTML(r.runnerVersion||'未知')}</small>
         </div>
-        <div class="runner-head-actions">${runnerStatusLabel(r.status,r.lastSeenAt)}${shared?'':`<button class="button ghost runner-check-update" type="button" data-runner-check-update="${escapeHTML(r.id)}" ${r.status!=='online'?'disabled':checking?'aria-disabled="true"':''}>${huiIcon(checking?'arc-spinner':'refresh')}${checking?'处理中…':'检查更新'}</button>`}</div>
+        <div class="runner-head-actions">${runnerStatusLabel(r.status,r.lastSeenAt)}${shared?'':`<button class="button ghost runner-check-update" type="button" data-runner-check-update="${escapeHTML(r.id)}" ${r.status!=='online'?'disabled':checking?'aria-disabled="true"':''}>${huiIcon(checking?'arc-spinner':'refresh')}${checking?lfT('处理中…','Checking for updates…'):lfT('检查更新','Check for updates')}</button>`}</div>
       </div>
       <div class="runner-runtime-list">
         ${cliRows?`<div class="runner-runtime-heading"><span>CLI</span><button class="runner-auth-help" type="button" data-runner-auth-help aria-label="模型认证说明" aria-haspopup="dialog">模型认证 ${huiIcon('info')}</button></div>`:''}
@@ -300,8 +300,12 @@ async function testRunnerRuntime(runnerId,provider){
   renderRunnersView();
   try{
     await api('/api/runners/runtimes/test',{method:'POST',silent:true,body:JSON.stringify({runnerId,provider})});
-    toast(`${runnerCLILabels[provider]} 测试通过`,'ok');
-  }catch(err){toast(`${runnerCLILabels[provider]}：${err.message}`,'err',5000)}
+    toast(window.lfMessage?.('runner.testPassed',{cli:runnerCLILabels[provider]})??`${runnerCLILabels[provider]} 测试通过`,'ok');
+  }catch(err){
+    const cli=runnerCLILabels[provider];
+    const message=err.code==='runner_api_key_required'?window.lfMessage?.('runner.testApiKeyRequired',{cli}):null;
+    toast(message??`${cli}：${err.message}`,'err',5000);
+  }
   finally{
     runnerRuntimeTests.delete(key);
     renderRunnersView();

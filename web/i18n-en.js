@@ -1620,6 +1620,8 @@ Object.assign(window.LF_I18N_EN, {
 });
 
 window.LF_MESSAGES = {
+  "runner.testApiKeyRequired": ["{cli}：请在个人配置中添加 API Key，或在执行机器上使用账号登录（如果该 CLI 支持）。", "{cli}: Add an API key in Personal settings, or use Account sign-in on this runner if the CLI supports it."],
+  "runner.testPassed": ["{cli} 测试通过", "{cli}: Test passed"],
   "git.verifyAgain": ["重新校验", "Verify again"],
   "appearance.label": ["外观", "Appearance"],
   "appearance.light": ["浅色", "Light"],

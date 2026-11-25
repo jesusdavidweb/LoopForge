@@ -61,7 +61,7 @@ func (h *runnersHandlers) runnerRuntimeTest(c *gin.Context) {
 	}
 	runnerLogin := runnerUsesLocalLogin(runner, provider)
 	if key, _ := assistantEngineCredential(user, provider); key == "" && !runnerLogin {
-		c.JSON(http.StatusBadRequest, gin.H{"error": assistantEngineMissingKey(provider)})
+		c.JSON(http.StatusBadRequest, gin.H{"error": assistantEngineMissingKey(provider), "code": "runner_api_key_required"})
 		return
 	}
 
