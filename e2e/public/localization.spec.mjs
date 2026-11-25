@@ -69,7 +69,103 @@ test('localized desktop and mobile surfaces use English after changing the langu
   await projectWizard.locator('[data-pw-action=next]').click();
   await expect(projectWizard.getByRole('alert')).toHaveText('Enter a project name.');
   await page.screenshot({path:info.outputPath('project-name-required.png')});
-  await page.goto('/?localization-test=1#/projectCredentials');
+  await page.goto('/?localization-test=1#/settings');
+  let githubAvailable = false;
+  await page.route('**/api/auth/github', route => route.fulfill(githubAvailable
+    ? {json:{enabled:true}}
+    : {status:503,json:{error:'Unavailable'}}));
+  const gitMenu = page.locator('[data-credential-add-menu=platform]');
+  await gitMenu.selectOption('gitToken', {force:true});
+  const credentialWizard = page.locator('#credentialWizard');
+  await expect(credentialWizard.getByRole('status').filter({hasText:'Could not check authorization availability'})).toBeVisible();
+  await expect.poll(() => unlocalized(credentialWizard)).toEqual([]);
+  githubAvailable = true;
+  await credentialWizard.getByRole('button', {name:'Check again', exact:true}).click();
+  await expect(credentialWizard.getByRole('button', {name:'Connect GitHub', exact:true})).toBeEnabled();
+  await expect.poll(() => unlocalized(credentialWizard)).toEqual([]);
+  await credentialWizard.getByRole('tab', {name:'Access token', exact:true}).click();
+  await expect(credentialWizard.getByText('Use an access token', {exact:true})).toBeVisible();
+  await expect.poll(() => unlocalized(credentialWizard)).toEqual([]);
+  await credentialWizard.locator('#credentialWizardSecret').fill('demo-token-for-display-only');
+  await credentialWizard.locator('[data-wizard-next]').click();
+  await expect(credentialWizard.getByRole('button', {name:'Verify and save'})).toBeVisible();
+  await expect.poll(() => unlocalized(credentialWizard)).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(credentialWizard).toBeHidden();
+
+  for (const [value, dialogID] of [
+    ['gitSshKey', 'gitSSHKeyDialog'],
+    ['github', 'gitHTTPCredentialDialog'],
+    ['gitlab', 'gitHTTPCredentialDialog'],
+    ['other', 'gitHTTPCredentialDialog'],
+  ]) {
+    await gitMenu.selectOption(value, {force:true});
+    const gitDialog = page.locator('#' + dialogID);
+    await expect(gitDialog.locator('form')).toBeVisible();
+    await expect.poll(() => unlocalized(gitDialog)).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(gitDialog).toBeHidden();
+  }
+
+  const executors = page.locator('[data-credential-add-menu=model]');
+  const executorIDs = await executors.locator('option:not([disabled])').evaluateAll(options => options.map(option => option.value));
+  expect(executorIDs.length).toBeGreaterThan(0);
+  for (const id of executorIDs) {
+    await executors.selectOption(id, {force:true});
+    await credentialWizard.getByText('How to get an API key', {exact:true}).click();
+    await expect.poll(() => unlocalized(credentialWizard), {message:id}).toEqual([]);
+    const labels = await credentialWizard.locator('select:visible option').allTextContents();
+    expect(labels.join(' '), id).not.toMatch(/\p{Script=Han}/u);
+    await page.keyboard.press('Escape');
+    await expect(credentialWizard).toBeHidden();
+  }
+
+  const runnerFixture = {
+    id:'localization-runner', name:'Localization test runner', ownerUserId:1,
+    status:'online', os:'darwin', arch:'arm64', runLimit:2, lastSeenAt:new Date().toISOString(),
+    runtimes:[
+      {provider:'claude-code', status:'online', authMode:'local', version:'1.0'},
+      {provider:'claude-code', status:'online', authMode:'personal', version:'1.0'},
+    ],
+  };
+  let runnerAuth = 'local';
+  await page.route('**/api/runners?mine=1', route => route.fulfill({
+    json:[{...runnerFixture,runtimes:runnerFixture.runtimes.filter(runtime => runtime.authMode === runnerAuth)}],
+  }));
+  await page.goto('/#/runners');
+  const authHelp = page.getByRole('button', {name:'About model authentication', exact:true});
+  await expect(authHelp).toHaveText('Model authentication');
+  await authHelp.click();
+  const runnerDialog = page.locator('#confirmModal');
+  await expect(runnerDialog).toContainText('Model authentication methods');
+  await expect.poll(() => unlocalized(runnerDialog)).toEqual([]);
+  await page.locator('#confirmOkBtn').click();
+
+  for (const [mode, emptyLabel] of [['local', 'Use models from the runner’s account'], ['personal', 'Use Claude Code built-in models']]) {
+    runnerAuth = mode;
+    await page.reload();
+    await page.locator('[data-runner-runtime-menu="localization-runner|claude-code"]').click();
+    await page.locator('.runner-runtime-menu').getByRole('menuitem', {name:'Model list',exact:true}).click();
+    await expect(runnerDialog.getByText(emptyLabel, {exact:true})).toBeVisible();
+    await expect(runnerDialog.getByRole('button', {name:'Fetch available models'})).toBeVisible();
+    await expect.poll(() => unlocalized(runnerDialog), {message:mode}).toEqual([]);
+    await runnerDialog.getByRole('button', {name:'Add model'}).click();
+    await expect(runnerDialog.getByRole('textbox', {name:'Model ID',exact:true})).toBeVisible();
+    await expect.poll(() => unlocalized(runnerDialog)).toEqual([]);
+    await page.locator('#confirmCancelBtn').click();
+  }
+
+  await page.goto('/#/sandboxes/new');
+  const sandboxForm = page.locator('#assetForm');
+  await expect(sandboxForm.locator('#assetDockerfile')).toBeVisible();
+  await expect.poll(() => unlocalized(page.locator('#assetsView'))).toEqual([]);
+  const isolation = sandboxForm.locator('select[name=driver]');
+  await expect(isolation.locator('option')).toHaveText(['Docker','Lightweight system isolation']);
+  await isolation.selectOption('native', {force:true});
+  await expect(sandboxForm.locator('[data-sandbox-drivers=native]')).toBeVisible();
+  await expect.poll(() => unlocalized(page.locator('#assetsView'))).toEqual([]);
+
+  await page.goto('/?localization-test=2#/projectCredentials');
   await expect(page.locator('#projectCredentialsProject')).toHaveText('LoopForge demo project');
 
   await page.goto('/#/flow/welcome-workflow');

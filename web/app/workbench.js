@@ -59,7 +59,7 @@ const CREDENTIAL_KINDS=[
   {key:'gitToken',group:'platform',name:'GitHub',short:'仓库授权',logo:'github',monochrome:true,
     use:'克隆私有仓库、创建任务分支、推送交付产物',
     description:'用于克隆私有仓库、创建任务分支及推送交付产物。',
-    guide:[['打开 GitHub「Settings → Developer settings → Personal access tokens」','https://github.com/settings/tokens','前往 GitHub 申请个人访问令牌'],['新建令牌，为目标仓库授予 <code>Contents</code> 和 <code>Pull requests</code> 的读写权限'],['复制令牌粘贴到下方，保存前会自动校验权限']],
+    guide:[[()=>lfT('打开 GitHub「Settings → Developer settings → Personal access tokens」','In GitHub, open Settings → Developer settings → Personal access tokens.'),'https://github.com/settings/tokens','前往 GitHub 申请个人访问令牌'],[()=>lfT('新建令牌，为目标仓库授予 <code>Contents</code> 和 <code>Pull requests</code> 的读写权限','Create a token with read and write access to <code>Contents</code> and <code>Pull requests</code> for the target repositories.')],['复制令牌粘贴到下方，保存前会自动校验权限']],
     placeholder:'请输入个人访问令牌（PAT）',hint:'保存前会先校验令牌有效性与权限',
     impact:'依赖私有仓库的 SOP 将无法克隆或推送仓库。'},
   {key:'gitSshKey',group:'platform',name:'Git SSH',short:'Git SSH 密钥',icon:'key',
@@ -95,7 +95,7 @@ const CREDENTIAL_KINDS=[
     note:'OpenCode 没有自己的模型服务，需要填写 Base URL。',protocols:[['chat','Chat Completions'],['responses','Responses'],['messages','Messages（Anthropic）']]}),
   agentCliCredentialKind('cursor',{name:'Cursor CLI',logo:'cursor',monochrome:true,
     note:'Cursor CLI 连接 Cursor 官方服务，可按账号获取模型。',
-    guide:[['登录 Cursor 控制台，在「Integrations → User API Keys」新建 Key','https://cursor.com/dashboard?tab=integrations','前往 Cursor 创建 API Key'],['复制以 <code>crsr_</code> 开头的 Key'],['粘贴到下方保存']]}),
+    guide:[['登录 Cursor 控制台，在「Integrations → User API Keys」新建 Key','https://cursor.com/dashboard?tab=integrations','前往 Cursor 创建 API Key'],[()=>lfT('复制以 <code>crsr_</code> 开头的 Key','Copy the key beginning with <code>crsr_</code>.')],['粘贴到下方保存']]}),
   agentCliCredentialKind('agy',{name:'Antigravity',logo:'antigravity',baseUrl:'https://gateway.example.com/v1',required:protocol=>protocol==='chat',
     note:'默认连接 Gemini 官方服务；选择 OpenAI 兼容网关时需要填写 Base URL。',extraNote:'OpenAI 兼容网关必填',
     guide:[['在 Google AI Studio 创建 Gemini API Key，或准备 OpenAI 兼容网关的 Key','https://aistudio.google.com/apikey','前往 Google AI Studio'],['走网关时记下网关地址'],['粘贴 Key，选择协议；保存后可在模型目录里挑选 AI 对话的模型']],
@@ -234,7 +234,9 @@ function credentialCatalogCopy(mode,kind){
 }
 function credentialCatalogDetailHTML(mode,kind,protocol){
   const copy=credentialCatalogCopy(mode,kind);
-  return mode!=='remote'?escapeHTML(copy.detail):`目录为空时，AI 对话列出 Base URL 的 <code data-catalog-endpoint>${escapeHTML(credentialModelsEndpoint(kind,protocol))}</code> 返回的模型。`;
+  if(mode!=='remote')return escapeHTML(copy.detail);
+  const endpoint=`<code data-catalog-endpoint>${escapeHTML(credentialModelsEndpoint(kind,protocol))}</code>`;
+  return lfT(`目录为空时，AI 对话列出 Base URL 的 ${endpoint} 返回的模型。`,`When the catalog is empty, chats use the models returned by ${endpoint} at the Base URL.`);
 }
 function credentialCatalogHTML(kind,user,{runnerLogin=false,label='模型目录'}={}){
   const baseUrl=credentialValue(user,kind.baseURL||(kind.extra?.url?kind.extra.name:'')),protocol=credentialProtocol(kind,user);
@@ -1362,7 +1364,7 @@ function credentialWizardStepTwoHTML(kind){
   // A guide link given as functions follows the selected network environment.
   const guide=kind.guide.map(([text,href,label],index)=>{
     const dynamic=typeof href==='function',url=dynamic?href(wizard.extra):href,name=typeof label==='function'?label(wizard.extra):label;
-    return `<li class="${wizard.guide[index]?'is-done':''}" data-wizard-guide="${index}"><span class="credential-guide-no">${wizard.guide[index]?credentialGlyph('check-draw',10):index+1}</span><span>${text}${url?`<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-wizard-link="${index}"${dynamic?' data-environment-link':''}>${escapeHTML(name)} ↗</a>`:''}</span></li>`;
+    return `<li class="${wizard.guide[index]?'is-done':''}" data-wizard-guide="${index}"><span class="credential-guide-no">${wizard.guide[index]?credentialGlyph('check-draw',10):index+1}</span><span>${typeof text==='function'?text():text}${url?`<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-wizard-link="${index}"${dynamic?' data-environment-link':''}>${escapeHTML(name)} ↗</a>`:''}</span></li>`;
   }).join('');
   const github=kind.key==='gitToken';
   const manual=wizard.githubMethod==='manual';
