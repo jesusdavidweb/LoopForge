@@ -120,6 +120,20 @@ test('localized desktop and mobile surfaces use English after changing the langu
     await expect(credentialWizard).toBeHidden();
   }
 
+  await page.evaluate(() => {
+    // Render a configured credential without storing or transmitting a token.
+    const user = credentialUser();
+    storeCredentialUser({...user, gitHubCredentialConfigured:true});
+    renderPersonalSettings();
+  });
+  const verifyGit = page.locator('[data-credential-row=gitToken]').getByRole('button', {name:'Verify again', exact:true});
+  await verifyGit.hover();
+  await expect.poll(() => verifyGit.evaluate(button => {
+    const tooltip = getComputedStyle(button.closest('.credential-tip'), '::after');
+    return [tooltip.content, tooltip.opacity];
+  })).toEqual(['"Verify again"', '1']);
+  await page.mouse.move(800, 30);
+
   const runnerFixture = {
     id:'localization-runner', name:'Localization test runner', ownerUserId:1,
     status:'online', os:'darwin', arch:'arm64', runLimit:2, lastSeenAt:new Date().toISOString(),

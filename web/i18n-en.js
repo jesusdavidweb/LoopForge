@@ -1620,6 +1620,7 @@ Object.assign(window.LF_I18N_EN, {
 });
 
 window.LF_MESSAGES = {
+  "git.verifyAgain": ["重新校验", "Verify again"],
   "appearance.label": ["外观", "Appearance"],
   "appearance.light": ["浅色", "Light"],
   "appearance.dark": ["深色", "Dark"],

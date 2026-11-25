@@ -716,8 +716,9 @@ function credentialRuntimeStatus(kind) {
 }
 function credentialRowMainHTML(kind,user){
   const managed=!!kind.dialog,on=credentialConfigured(kind,user),open=on&&credentialUI().open===kind.key,status=credentialStatus(kind,user);
+  const verifyAgain=escapeHTML(window.lfMessage?.('git.verifyAgain')??'重新校验');
   const end=on&&!managed
-    ?`${kind.key==='gitToken'?`${credentialBadgeHTML(status)}<span class="credential-tip" data-tip="重新校验"><button type="button" class="credential-btn ghost icon credential-ink git-token-verify" data-credential-act="verify" aria-label="重新校验"${status==='busy'?' disabled':''}>${credentialGlyph('refresh',15)}</button></span>`:''}<span class="credential-row-action" aria-hidden="true"><span data-credential-fold-label>${open?'收起':'编辑'}</span><span class="credential-chevron">${credentialGlyph('chevron-down',14)}</span></span>`
+    ?`${kind.key==='gitToken'?`${credentialBadgeHTML(status)}<span class="credential-tip" data-tip="${verifyAgain}"><button type="button" class="credential-btn ghost icon credential-ink git-token-verify" data-credential-act="verify" aria-label="${verifyAgain}"${status==='busy'?' disabled':''}>${credentialGlyph('refresh',15)}</button></span>`:''}<span class="credential-row-action" aria-hidden="true"><span data-credential-fold-label>${open?'收起':'编辑'}</span><span class="credential-chevron">${credentialGlyph('chevron-down',14)}</span></span>`
     :`${credentialBadgeHTML(status)}<button type="button" class="credential-btn secondary credential-ink" data-credential-act="setup"${managed?' aria-haspopup="dialog"':''}>${managed?kind.action:'去配置'}<span class="credential-nudge">${credentialGlyph('chevron-right',13)}</span></button>`;
   const interaction=managed?'':` role="button" tabindex="0"${on?` aria-expanded="${open}"`:''}`;
   const preferred=credentialDefaultsExecutor(credentialUI().catalog);
