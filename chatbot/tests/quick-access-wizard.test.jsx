@@ -333,7 +333,7 @@ describe("QuickAccessWizard", () => {
     expect(await screen.findByText("快速接入已完成")).toBeInTheDocument();
     expect(writeMock).toHaveBeenCalledWith(
       "/api/sandboxes",
-      expect.objectContaining({ driver: "local" }),
+      expect.objectContaining({ driver: "native" }),
       "PUT",
     );
     expect(writeMock).toHaveBeenCalledWith(

@@ -165,6 +165,14 @@ export function Dialog({ title, children, onClose, footer }) {
 const prefersReducedMotion = () =>
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+// The dictionary covers most "搜索…" placeholders verbatim; the rest are
+// composed from the option label so they still read in English.
+function selectSearchPlaceholder(label) {
+  const exact = window.LF_I18N_EN?.[`搜索${label}`];
+  if (exact) return exact;
+  return `Search ${window.lfTranslate?.(label) || label}`;
+}
+
 function Highlighted({ text, query }) {
   const index = query ? text.toLowerCase().indexOf(query) : -1;
   if (index < 0) return text;
@@ -571,7 +579,7 @@ function SelectPopover({
         <label className="menu-search" ref={search}>
           <HarnessIcon name="search" size={15} interactive={false} />
           <input
-            placeholder={`搜索${label}`}
+            placeholder={window.lfT?.(`搜索${label}`, selectSearchPlaceholder(label)) ?? `搜索${label}`}
             value={query}
             role="combobox"
             aria-expanded={open}

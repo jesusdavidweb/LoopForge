@@ -215,7 +215,15 @@ test('localized desktop and mobile surfaces use English after changing the langu
   await expect(sandboxForm.locator('[data-sandbox-drivers=native]')).toBeVisible();
   await expect.poll(() => unlocalized(page.locator('#assetsView'))).toEqual([]);
 
-  await page.goto('/?localization-test=2#/projectCredentials');
+  await page.goto('/?localization-test=2#/skills/new');
+  const skillView = page.locator('#assetsView');
+  await expect(skillView.getByRole('heading', {name:'New Skill',exact:true})).toBeVisible();
+  await expect(skillView.getByRole('button', {name:'Create skill',exact:true})).toHaveCount(2);
+  await expect(skillView.getByText('Create the skill first, then upload its files', {exact:true})).toBeVisible();
+  await expect.poll(() => unlocalized(skillView)).toEqual([]);
+  await page.screenshot({path:info.outputPath('new-skill.png')});
+
+  await page.goto('/#/projectCredentials');
   await expect(page.locator('#projectCredentialsProject')).toHaveText('LoopForge demo project');
 
   await page.goto('/#/flow/welcome-workflow');
@@ -230,6 +238,58 @@ test('localized desktop and mobile surfaces use English after changing the langu
   await expect.poll(() => unlocalized(appearance)).toEqual([]);
   await page.screenshot({path:info.outputPath('appearance-menu.png')});
   await page.keyboard.press('Escape');
+
+  const workspace = chat(page);
+  await workspace.locator('.machine-picker').click();
+  const workspaceMenu = workspace.locator('.select-menu:visible');
+  await expect(workspaceMenu.getByPlaceholder('Search Session execution machine')).toBeVisible();
+  await expect(workspaceMenu.getByText('Automatically assigned', {exact:true})).toBeVisible();
+  await expect(workspaceMenu.getByRole('option', {name:'Refresh runner list'})).toBeVisible();
+  await expect(workspaceMenu.getByRole('option', {name:'Manage runners'})).toBeVisible();
+  await expect.poll(() => unlocalized(workspaceMenu)).toEqual([]);
+  await workspace.locator('.machine-picker').press('Escape');
+  await expect(workspaceMenu).toHaveCount(0);
+
+  const effortTrigger = workspace.getByRole('button', {name:'Reasoning effort'});
+  // The effort list needs a configured model CLI, which the acceptance account
+  // may not have.
+  if (await effortTrigger.isEnabled()) {
+    await effortTrigger.click();
+    const effortMenu = workspace.locator('.permission-menu:visible');
+    await expect(effortMenu.getByText('Uses the model’s default reasoning effort.')).toBeVisible();
+    await expect.poll(() => unlocalized(effortMenu)).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(effortMenu).toHaveCount(0);
+  }
+
+  await workspace.getByRole('button', {name:'Approval mode'}).click();
+  const approvalMenu = workspace.locator('.permission-menu:visible');
+  await expect(approvalMenu.getByText('Ask for approval')).toBeVisible();
+  await expect(approvalMenu.getByText('Workspace files and commands run automatically; platform writes need your approval and external tool writes need permission.')).toBeVisible();
+  await expect.poll(() => unlocalized(approvalMenu)).toEqual([]);
+  await page.keyboard.press('Escape');
+  await expect(approvalMenu).toHaveCount(0);
+
+  await page.route('**/api/users', async route => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const users = await response.json();
+    await route.fulfill({response, json:users.map(user => ({...user,codexApiKeyConfigured:true}))});
+  });
+  await workspace.locator('.project-picker').click();
+  await expect(workspaceMenu.getByText('No project linked', {exact:true})).toBeVisible();
+  await workspaceMenu.getByRole('option', {name:'New project',exact:true}).click();
+  const quickSetup = workspace.locator('.qa-dialog');
+  await quickSetup.getByRole('button', {name:'Next',exact:true}).click();
+  await quickSetup.getByRole('tab', {name:'New project',exact:true}).click();
+  await quickSetup.getByRole('textbox', {name:/project name/i}).fill('Localization test project');
+  await quickSetup.getByPlaceholder('https://github.com/owner/repo').fill('https://github.com/example/localization-demo');
+  await expect(quickSetup.getByText('Step 2 of 3', {exact:false})).toBeVisible();
+  await expect(quickSetup.getByText('Link a default Git repository', {exact:true})).toBeVisible();
+  await quickSetup.getByRole('button', {name:'Next',exact:true}).click();
+  await expect(quickSetup.getByText('Step 3 of 3', {exact:false})).toBeVisible();
+  await expect(quickSetup.getByText('Define requirements', {exact:true})).toBeVisible();
+  await expect(quickSetup.getByText('Link localization-demo', {exact:false})).toBeVisible();
 
   await page.setViewportSize({width:390,height:844});
   await page.goto('/#/collaboration');

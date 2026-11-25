@@ -598,7 +598,7 @@ async function provisionFallbackProjectSOP(projectId, workflowId, owner) {
       id: sandboxId,
       name: "本地开发沙箱",
       projectId,
-      driver: "local",
+      driver: "native",
       shared: false,
     },
     "PUT",
@@ -839,7 +839,7 @@ export default function QuickAccessWizard({
         return {
           value: workflow.id,
           label: workflow.name,
-          hint: `${stageCount} 个阶段 · ${scopeLabel}`,
+          hint: window.lfT?.(`${stageCount} 个阶段 · ${scopeLabel}`, `${stageCount} ${stageCount === 1 ? "stage" : "stages"} · ${window.lfTranslate?.(scopeLabel) ?? scopeLabel}`) ?? `${stageCount} 个阶段 · ${scopeLabel}`,
         };
       }),
     [availableWorkflows, currentProject, projectMode],
@@ -1641,7 +1641,7 @@ export default function QuickAccessWizard({
                   <header className="qa-stage-heading">
                     <div className="qa-kicker">
                       <span className="qa-kicker-name" aria-hidden="true">快速接入</span>
-                      第 {activeStepIndex + 1} 步，共 {wizardStepCount} 步
+                      {window.lfT?.(`第 ${activeStepIndex + 1} 步，共 ${wizardStepCount} 步`, `Step ${activeStepIndex + 1} of ${wizardStepCount}`) ?? `第 ${activeStepIndex + 1} 步，共 ${wizardStepCount} 步`}
                     </div>
                     <h3 ref={headingRef} tabIndex={-1} className="qa-title">
                       {activeStep.title}
@@ -1895,8 +1895,7 @@ export default function QuickAccessWizard({
                                   role="note"
                                 >
                                   <p>
-                                    「{currentProject?.name}」是已有项目，只有它的
-                                    Owner 或平台管理员可以绑定仓库。你可以：
+                                    {`「${currentProject?.name}」是已有项目，只有它的 Owner 或平台管理员可以绑定仓库。你可以：`}
                                   </p>
                                   <div className="qa-repo-permission-actions">
                                     <button

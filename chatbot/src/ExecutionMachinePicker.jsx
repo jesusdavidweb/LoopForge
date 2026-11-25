@@ -33,11 +33,11 @@ export default function ExecutionMachinePicker({ chat, onManage }) {
   const loadError = locked ? "" : chat.machineError;
   const label = !known
     ? loadError
-      ? "执行机器加载失败"
-      : "加载执行机器…"
+      ? window.lfT?.("执行机器加载失败", "Could not load runners") ?? "执行机器加载失败"
+      : window.lfT?.("加载执行机器…", "Loading runners…") ?? "加载执行机器…"
     : runnerId
       ? machine?.name || runnerId
-      : "LoopForge 云端";
+      : window.lfT?.("LoopForge 云端", "LoopForge Cloud") ?? "LoopForge 云端";
   const online =
     known &&
     (runnerId

@@ -1907,3 +1907,123 @@ Object.assign(window.LF_I18N_EN, {
   "环境变量说明": "About environment variables",
   "JSON 对象，叠加到沙箱基础环境并随资产保存；不要在这里保存凭证。平台凭证、HOME/TMPDIR 和遥测变量优先级更高。": "Enter a JSON object to extend the sandbox’s base environment. These variables are saved with the sandbox. Keep credentials out of this field. Platform credentials, HOME, TMPDIR, and telemetry variables take precedence."
 });
+
+Object.assign(window.LF_I18N_EN, {
+  "填写标识和名称后创建，创建后即可上传文件。": "Enter a name and ID to create the skill, then upload its files.",
+  "创建技能": "Create skill",
+  "每次上传都会完整替换现有文件": "Each upload replaces all existing files",
+  "先创建技能，再上传文件": "Create the skill first, then upload its files",
+  "支持文件夹、.zip 压缩包或单独的 SKILL.md。": "Upload a folder, a ZIP archive, or a single SKILL.md file."
+});
+
+Object.assign(window.LF_I18N_EN, {
+  "平台自动分配": "Automatically assigned",
+  "刷新机器列表": "Refresh runner list",
+  "管理执行机器": "Manage runners",
+  "不绑定项目": "No project linked",
+  "没有匹配的执行机器": "No matching runners",
+  "执行机器加载失败，请重试": "Could not load runners. Try again.",
+  "正在加载执行机器": "Loading runners",
+  "离线，执行前需启动": "Offline. Start this runner before using it.",
+  "绑定默认 GitHub 仓库": "Link a default Git repository",
+  "为该项目添加 GitHub 仓库": "Add a Git repository to this project",
+  "粘贴 Git HTTPS 链接或 Git SSH 地址，自动设为项目默认仓库": "Paste a Git HTTPS or SSH URL to set it as the default repository.",
+  "旧项目可直接追加新仓库，复用已有流程与角色；留空则沿用现有仓库": "Add a repository while keeping the project’s existing workflows and roles. Leave blank to keep its current repository.",
+  "沿用项目现有仓库与流程": "Keep the existing repository and workflow",
+  "已跳过，可在派发需求或项目配置中再绑定": "Skipped. You can link a repository later from Project settings or when assigning a requirement.",
+  "GitHub 默认主分支": "GitHub default branch",
+  "传统主分支": "Traditional default branch",
+  "预发验证分支": "Staging branch",
+  "开发集成分支": "Development integration branch",
+  "平台默认模板": "Built-in template",
+  "本项目已有 SOP（直接复用）": "Existing project SOP",
+  "绑定 {0}": "Link {0}",
+  "需求定型": "Define requirements",
+  "方案设计": "Design the solution",
+  "代码实现": "Implement changes",
+  "测试验证": "Test and validate",
+  "交付汇总": "Summarize delivery",
+  "澄清需求边界与验收标准": "Clarify the scope and acceptance criteria",
+  "产出技术方案与实现计划": "Produce the technical design and implementation plan",
+  "在工作分支实现并自测": "Implement and test changes on a working branch",
+  "审查改动质量与规范": "Review the quality and standards of the changes",
+  "运行测试并给出验收结论": "Run tests and report acceptance results",
+  "推送分支并创建合并请求": "Push the branch and open a pull request",
+  "汇总产物与沉淀知识": "Summarize deliverables and document lessons learned",
+  "请选择一个项目，或切换到新建项目。": "Select a project or switch to creating a new one.",
+  "请填写项目名称和项目标识。": "Enter a project name and ID.",
+  "local 沙箱已移除，请改用 native 沙箱": "Local sandboxes have been removed. Use native isolation.",
+  "共享 SOP": "Shared SOP",
+  "暂无在线机器": "No cloud runners online",
+  "加载执行机器…": "Loading runners…",
+  "执行机器加载失败": "Could not load runners",
+  "未加入的项目": "Projects not joined",
+  "绑定当前会话到此项目": "Bind this conversation to the project",
+  "在此项目新开对话": "Start a new conversation in this project",
+  "新建项目「{0}」": "New project “{0}”",
+  "使用已有项目「{0}」": "Existing project “{0}”",
+  "运行时指定仓库": "Repository chosen at run time",
+  "使用平台共享模型": "Using the platform’s shared models",
+  "当前会话执行机器：{0}。会话已绑定，后续运行始终使用此机器。": "This conversation is locked to {0}. Later runs always use this runner."
+});
+
+Object.assign(window.LF_I18N_EN, {
+  "最低": "Minimal",
+  "更高": "Higher",
+  "最高": "Highest",
+  "极致": "Extreme",
+  "不使用额外推理。": "No extra reasoning.",
+  "开启思考模式。": "Thinking mode enabled.",
+  "只做最少推理，优先尽快返回。": "Minimal reasoning, prioritizing a fast response.",
+  "优先响应速度，适合简单问题。": "Prioritizes response speed. Best for simple questions.",
+  "兼顾响应速度与推理深度。": "Balances response speed and reasoning depth.",
+  "更充分地推理，适合复杂问题。": "Reasons more thoroughly. Best for complex questions.",
+  "投入更多推理时间，适合困难任务。": "Invests more reasoning time. Best for difficult tasks.",
+  "使用模型支持的最高思考强度，耗时可能更长。": "Uses the highest reasoning effort the model supports; it may take longer.",
+  "使用极致推理强度，耗时可能更长。": "Uses the highest reasoning effort; it may take longer.",
+  "使用模型的 ultracode 思考强度，耗时可能更长。": "Uses the model’s ultracode reasoning effort; it may take longer.",
+  "使用当前模型的默认思考强度。": "Uses the model’s default reasoning effort."
+});
+
+Object.assign(window.LF_I18N_EN, {
+  "工作区文件和命令自动执行；平台写入由你确认，外部工具写入需要授权。": "Workspace files and commands run automatically; platform writes need your approval and external tool writes need permission.",
+  "工作区文件和命令自动执行；AI 独立审查平台及外部操作并直接放行或拒绝，无需人工确认。": "Workspace files and commands run automatically; the AI reviews platform and external actions on its own and approves or rejects them, without manual confirmation.",
+  "工作区文件和命令自动执行；平台及外部操作使用当前账号权限直接执行。": "Workspace files and commands run automatically; platform and external actions run directly with your current account’s permissions."
+});
+
+Object.assign(window.LF_I18N_EN, {
+  "请选择": "Select",
+  "搜索选项…": "Search options…",
+  "可使用平台共享模型": "The platform’s shared model is available",
+  "可在个人配置或执行机器设置中准备": "Set it up in Personal Settings or in the runner settings",
+  "可以继续选择项目和仓库，也可以先补齐下面的配置。": "You can continue to choose a project and repository, or complete the setup below first.",
+  "平台共享模型可用，可直接继续。需要操作私有仓库时，可以在这里添加 Git 凭据。": "The platform’s shared model is available, so you can continue. Add Git credentials here if you need to work with private repositories.",
+  "管理 GitHub 授权": "Manage GitHub authorization",
+  "管理 Git SSH 密钥": "Manage Git SSH keys",
+  "GitHub 个人访问令牌（PAT）": "GitHub personal access token (PAT)",
+  "请先添加一个 Git 凭据或执行器。": "Add a Git credential or an executor first.",
+  "GitHub 令牌未保存，请检查校验结果。": "The GitHub token was not saved. Check the validation result.",
+  "保存快速接入配置失败": "Could not save the Quick Setup configuration",
+  "已关联仓库": "Linked repository",
+  "新增仓库地址（可选）": "New repository URL (optional)",
+  "尚未配置 {0} 的 SSH 密钥，可返回上一步添加，也可稍后在个人配置中添加。": "No SSH key is configured for {0}. Go back to add one, or add it later under Personal Settings.",
+  "· 仓库可在运行时指定": "· Repository chosen at run time",
+  "· 仓库 {0}": "· Repository {0}",
+  "未配置，克隆/推送私有仓库前可在个人配置补齐": "Not configured; add it under Personal Settings before cloning or pushing private repositories",
+  "请输入 Git HTTPS 仓库链接或 Git SSH 克隆地址。": "Enter a Git HTTPS repository URL or a Git SSH clone address.",
+  "后端交付 SOP": "Backend delivery SOP",
+  "本地开发沙箱": "Local development sandbox",
+  "从需求定型、方案设计、代码实现、独立评审、测试验证到发起 MR 的标准交付流程。": "The standard delivery flow, from requirement scoping, solution design, implementation, independent review and testing to opening a pull request.",
+  "从需求定型、方案设计、代码实现、独立评审、测试验证到发起 MR 的标准交付链路。": "The standard delivery chain, from requirement scoping, solution design, implementation, independent review and testing to opening a pull request.",
+  "完成接入": "Finish setup",
+  "发起 MR": "Open PR",
+  "平台共享模型（{0}）": "Platform shared models ({0})",
+  "「{0}」是已有项目，只有它的 Owner 或平台管理员可以绑定仓库。你可以：": "“{0}” is an existing project. Only its Owner or a platform admin can bind repositories. You can:",
+  "你不是「{0}」的 Owner，不能为它绑定仓库。请新建自己的项目并绑定，或关闭「绑定仓库」继续体验。": "You are not the Owner of “{0}”, so you cannot bind a repository to it. Create your own project and link the repository there, or turn off “Bind repository” to continue."
+});
+
+Object.assign(window.LF_I18N_EN, {
+  "AI 生成": "AI generated",
+  "上传的文件": "Uploaded file",
+  "AI 已拒绝": "AI declined"
+});
